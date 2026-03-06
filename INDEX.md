@@ -34,6 +34,7 @@ docs/
 │   └── ARCHITECTURE.md          # Service architecture
 │
 ├── file-service/                # File Storage Service
+├── storage-service/             # Storage Service
 │   ├── README.md                # Service overview
 │   ├── API.md                   # API endpoints & examples
 │   └── ARCHITECTURE.md          # Service architecture
@@ -56,12 +57,13 @@ docs/
 
 ## 🚀 Quick Start Guides
 
-| Document                | Description                  | Link                                       |
-| ----------------------- | ---------------------------- | ------------------------------------------ |
-| **Getting Started**     | Set up the entire platform   | [GETTING_STARTED.md](./GETTING_STARTED.md) |
-| **Deployment Guide**    | Deploy to production         | [DEPLOYMENT.md](./DEPLOYMENT.md)           |
-| **System Architecture** | Understand the system design | [ARCHITECTURE.md](./ARCHITECTURE.md)       |
-| **API Overview**        | Browse all service APIs      | [API.md](./API.md)                         |
+| Document                  | Description                             | Link                                                   |
+| ------------------------- | --------------------------------------- | ------------------------------------------------------ |
+| **Getting Started**       | Set up the entire platform              | [GETTING_STARTED.md](./GETTING_STARTED.md)             |
+| **Deployment Guide**      | Deploy to production                    | [DEPLOYMENT.md](./DEPLOYMENT.md)                       |
+| **System Architecture**   | Understand the system design            | [ARCHITECTURE.md](./ARCHITECTURE.md)                   |
+| **API Overview**          | Browse all service APIs                 | [API.md](./API.md)                                     |
+| **Service Communication** | gRPC, WebSocket, WebRTC migration guide | [SERVICE_COMMUNICATION.md](./SERVICE_COMMUNICATION.md) |
 
 ## 🔧 Backend Services
 
@@ -104,6 +106,14 @@ File upload, download, and storage using MinIO object storage.
 - **[README](./file-service/README.md)** - Overview, features, getting started
 - **[API Documentation](./file-service/API.md)** - Upload, download, presigned URLs
 - **[Architecture](./file-service/ARCHITECTURE.md)** - MinIO integration, metadata storage
+
+### Storage Service (Port 8088)
+
+Storage service foundation (setup only). APIs will be added in a follow-up change.
+
+- **[README](./storage-service/README.md)** - Overview, setup, configuration
+- **[API Documentation](./storage-service/API.md)** - Placeholder (no endpoints yet)
+- **[Architecture](./storage-service/ARCHITECTURE.md)** - Package layout and configuration
 
 ### Learning Service (Port 8086)
 
@@ -160,6 +170,9 @@ Production deployment guides for Docker, Kubernetes, and cloud platforms.
 - **Stripe**: Payment service (payment processing)
 - **React**: Frontend application
 - **AI/LLM**: Roadmap AI service
+- **gRPC**: Service-to-service communication (planned)
+- **WebSocket**: Real-time client communication (planned)
+- **WebRTC**: Peer-to-peer media streaming (planned)
 
 ### By Feature
 
@@ -168,6 +181,7 @@ Production deployment guides for Docker, Kubernetes, and cloud platforms.
 - **Roadmap Creation**: [Roadmap Service](./roadmap-service/)
 - **AI Generation**: [Roadmap AI Service](./roadmap-ai-service/)
 - **File Upload**: [File Service](./file-service/)
+- **Storage Foundation**: [Storage Service](./storage-service/)
 - **Quiz Management**: [Learning Service](./learning-service/)
 - **Payments & Credits**: [Payment Service](./payment-service/)
 - **Web Interface**: [Frontend](./memap-frontend/)

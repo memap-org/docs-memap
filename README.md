@@ -49,6 +49,7 @@ MeMap is a learning roadmap platform built with a microservices architecture usi
 | **Roadmap Service**    | 8083 | Roadmaps, nodes, permissions        | MySQL + Redis | [📖 Docs](./roadmap-service/)    |
 | **Roadmap AI Service** | 8084 | AI-powered roadmap generation, chat | MongoDB       | [📖 Docs](./roadmap-ai-service/) |
 | **File Service**       | 8085 | File upload/download, storage       | MySQL + MinIO | [📖 Docs](./file-service/)       |
+| **Storage Service**    | 8088 | Storage service foundation          | MySQL + Local | [📖 Docs](./storage-service/)    |
 | **Learning Service**   | 8086 | Quiz management (WIP)               | MySQL         | [📖 Docs](./learning-service/)   |
 | **Frontend**           | 5173 | React + TypeScript web application  | N/A           | [📖 Docs](./memap-frontend/)     |
 
@@ -61,6 +62,7 @@ Each service has its own detailed documentation folder:
 - **[Roadmap Service Documentation](./roadmap-service/)** - Roadmap management, nodes, edges, progress tracking
 - **[Roadmap AI Service Documentation](./roadmap-ai-service/)** - AI generation, summaries, chat, Q&A
 - **[File Service Documentation](./file-service/)** - File upload/download, MinIO integration
+- **[Storage Service Documentation](./storage-service/)** - Storage service foundation (setup only)
 - **[Learning Service Documentation](./learning-service/)** - Quiz management (WIP)
 - **[Frontend Documentation](./memap-frontend/)** - React application, routing, state management
 
@@ -115,6 +117,7 @@ spring-boot/
 │   ├── roadmap-service/     # Roadmap service documentation
 │   ├── roadmap-ai-service/  # AI service documentation
 │   ├── file-service/        # File service documentation
+│   ├── storage-service/     # Storage service documentation
 │   ├── learning-service/    # Learning service documentation
 │   └── memap-frontend/      # Frontend documentation
 ├── identity-service/        # Authentication & authorization
@@ -122,6 +125,7 @@ spring-boot/
 ├── roadmap-service/         # Roadmap CRUD operations
 ├── roadmap-ai-service/      # AI features & chat
 ├── file-service/            # File storage with MinIO
+├── storage-service/         # Storage service foundation
 ├── learning-serice/         # Learning management (WIP)
 ├── memap-frontend/          # React + TypeScript frontend
 ├── upload/                  # Local upload directory
@@ -171,17 +175,19 @@ Each service exposes Swagger UI for API documentation:
 | Roadmap Service    | http://localhost:8083/roadmap/swagger-ui.html  |
 | Roadmap AI Service | http://localhost:8084/ai/swagger-ui.html       |
 | File Service       | http://localhost:8085/file/swagger-ui.html     |
+| Storage Service    | http://localhost:8088/storage/swagger-ui.html  |
 
 ## Error Code Ranges
 
 Each service uses a unique error code range:
 
-| Service          | Code Range | Example                  |
-| ---------------- | ---------- | ------------------------ |
-| Roadmap Service  | 1xxx       | 1001 - Roadmap not found |
-| Profile Service  | 2xxx       | 2006 - User not found    |
-| Learning Service | 3xxx       | 3101 - Course not found  |
-| General          | 9999       | Uncategorized error      |
+| Service          | Code Range | Example                   |
+| ---------------- | ---------- | ------------------------- |
+| Roadmap Service  | 1xxx       | 1001 - Roadmap not found  |
+| Profile Service  | 2xxx       | 2006 - User not found     |
+| Learning Service | 3xxx       | 3101 - Course not found   |
+| Storage Service  | 4xxx       | 4001 - Argument not valid |
+| General          | 9999       | Uncategorized error       |
 
 ## Inter-Service Communication
 

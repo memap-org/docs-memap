@@ -140,6 +140,19 @@ services:
     networks:
       - memap-network
 
+  storage-service:
+    build: ./storage-service
+    container_name: storage-service
+    ports:
+      - '8088:8088'
+    env_file:
+      - ./storage-service/.env
+    depends_on:
+      - mysql
+    restart: unless-stopped
+    networks:
+      - memap-network
+
   # Infrastructure Services
   mysql:
     image: mysql:8.0

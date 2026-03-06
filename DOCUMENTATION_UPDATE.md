@@ -34,6 +34,11 @@ docs/
 │   ├── README.md
 │   ├── API.md
 │   └── ARCHITECTURE.md
+
+├── storage-service/          ✨ NEW
+│   ├── README.md
+│   ├── API.md
+│   └── ARCHITECTURE.md
 │
 ├── learning-service/         ✨ NEW
 │   ├── README.md
@@ -68,6 +73,7 @@ docs/
 | Roadmap Service    | ✅     | ✅       | ✅           | 17+                  |
 | Roadmap AI Service | ✅     | ✅       | ✅           | 6+                   |
 | File Service       | ✅     | ✅       | ✅           | 3                    |
+| Storage Service    | ✅     | ✅       | ✅           | 0 (setup only)       |
 | Learning Service   | ✅     | ✅       | ✅           | 6+                   |
 | Frontend           | ✅     | ✅       | ✅           | N/A                  |
 

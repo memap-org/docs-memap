@@ -9,6 +9,7 @@ For detailed API documentation of each service, please refer to their respective
 - **[Roadmap Service API](./roadmap-service/API.md)** - Roadmap CRUD, nodes, edges, progress tracking
 - **[Roadmap AI Service API](./roadmap-ai-service/API.md)** - AI generation, summaries, chat
 - **[File Service API](./file-service/API.md)** - File upload/download, presigned URLs
+- **[Storage Service API](./storage-service/API.md)** - Storage service foundation (setup only)
 - **[Learning Service API](./learning-service/API.md)** - Quiz management
 - **[Payment Service API](./payment-service/API.md)** - Credits, subscriptions, Stripe payments
 - **[Frontend Integration](./memap-frontend/API.md)** - Frontend API integration guide
@@ -22,6 +23,7 @@ For detailed API documentation of each service, please refer to their respective
 | Roadmap Service    | http://localhost:8083 | /roadmap     | [📖 API Docs](./roadmap-service/API.md)    |
 | Roadmap AI Service | http://localhost:8084 | /ai          | [📖 API Docs](./roadmap-ai-service/API.md) |
 | File Service       | http://localhost:8085 | /file        | [📖 API Docs](./file-service/API.md)       |
+| Storage Service    | http://localhost:8088 | /storage     | [📖 API Docs](./storage-service/API.md)    |
 | Learning Service   | http://localhost:8086 | /learning    | [📖 API Docs](./learning-service/API.md)   |
 | Payment Service    | http://localhost:8087 | /payment     | [📖 API Docs](./payment-service/API.md)    |
 | Frontend           | http://localhost:5173 | /            | [📖 Docs](./memap-frontend/)               |

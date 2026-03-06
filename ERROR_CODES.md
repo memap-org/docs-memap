@@ -31,7 +31,7 @@ MeMap uses standardized error codes across all microservices for consistent erro
 | 1001-1999 | Roadmap Service  | Roadmap, nodes, permissions      |
 | 2001-2999 | Profile Service  | Users, profiles, authentication  |
 | 3001-3999 | Learning Service | Courses, lessons, progress       |
-| 4001-4999 | File Service     | File upload/download             |
+| 4001-4999 | Storage Service  | File upload/download             |
 | 5001-5999 | AI Service       | AI generation, chat              |
 | 7001-7999 | Payment Service  | Credits, subscriptions, payments |
 | 9999      | All Services     | Uncategorized/unknown errors     |

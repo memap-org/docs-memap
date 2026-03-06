@@ -28,6 +28,7 @@ The Learning Service manages quizzes and assessments for the MeMap platform. It 
 - **Base URL**: `http://localhost:8089`
 - **Context Path**: `/learning`
 - **Full URL**: `http://localhost:8089/learning`
+- **gRPC Client Port**: Connects to Roadmap Service gRPC at `localhost:9083`
 
 ## Database
 
@@ -112,8 +113,48 @@ For architectural details, design patterns, and component interactions, see [ARC
 ## Related Services
 
 - **Identity Service**: JWT token validation
-- **Roadmap Service**: Link quizzes to roadmaps
+- **Roadmap Service**: Link quizzes to roadmaps, fetch roadmap names via gRPC
 - **Roadmap AI Service**: Generate quiz questions with AI
+
+## gRPC Integration
+
+The Learning Service uses gRPC to communicate with the Roadmap Service for efficient roadmap name lookups.
+
+### Configuration
+
+```yaml
+grpc:
+  client:
+    roadmap-service:
+      address: static://localhost:9083
+      negotiation-type: plaintext
+      enable-keep-alive: true
+      keep-alive-time: 30s
+      keep-alive-timeout: 10s
+      deadline: 5000 # 5 second timeout
+```
+
+### Environment Variables for gRPC
+
+| Variable                      | Default                   | Description                  |
+| ----------------------------- | ------------------------- | ---------------------------- |
+| `GRPC_CLIENT_ROADMAP_ADDRESS` | `static://localhost:9083` | Roadmap Service gRPC address |
+
+### Features
+
+- **Single Lookup**: Fetch roadmap name by ID for quiz detail responses
+- **Batch Lookup**: Fetch multiple roadmap names for quiz list responses
+- **Graceful Fallback**: Returns empty string if Roadmap Service is unavailable
+- **Timeout Handling**: 5-second deadline prevents hanging requests
+
+### How It Works
+
+When a quiz is created or retrieved, the service:
+
+1. Extracts the `roadmapId` from the quiz
+2. Calls `RoadmapGrpcClient.getRoadmapName(roadmapId)`
+3. Enriches the response with `roadmapName`
+4. Falls back to empty string on failure (graceful degradation)
 
 ## Security
 

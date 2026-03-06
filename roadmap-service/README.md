@@ -34,6 +34,7 @@ The Roadmap Service is the core service for managing learning roadmaps in the Me
 - **Base URL**: `http://localhost:8083`
 - **Context Path**: `/road-map`
 - **Full URL**: `http://localhost:8083/road-map`
+- **gRPC Server Port**: `9083`
 
 ## Database
 
@@ -119,7 +120,66 @@ For architectural details, design patterns, and component interactions, see [ARC
 - **Profile Service**: User profile information
 - **File Service**: File upload/download integration
 - **Roadmap AI Service**: AI-powered roadmap generation
-- **Learning Service**: Quiz integration
+- **Learning Service**: Quiz integration (consumes gRPC endpoint for roadmap name lookups)
+
+## gRPC Server
+
+The Roadmap Service exposes a gRPC server for efficient inter-service communication.
+
+### Configuration
+
+```yaml
+grpc:
+  server:
+    port: 9083
+```
+
+### Available RPCs
+
+| RPC                            | Description                                           |
+| ------------------------------ | ----------------------------------------------------- |
+| `GetRoadmapName(roadmap_id)`   | Returns roadmap name for a single ID                  |
+| `GetRoadmapNames(roadmap_ids)` | Returns map of roadmap names for multiple IDs (batch) |
+
+### Protocol Buffer Schema
+
+```protobuf
+service RoadmapLookupService {
+  rpc GetRoadmapName(GetRoadmapNameRequest) returns (RoadmapNameResponse);
+  rpc GetRoadmapNames(GetRoadmapNamesRequest) returns (RoadmapNamesResponse);
+}
+
+message GetRoadmapNameRequest {
+  string roadmap_id = 1;
+}
+
+message RoadmapNameResponse {
+  string roadmap_id = 1;
+  string name = 2;
+  bool found = 3;
+}
+
+message GetRoadmapNamesRequest {
+  repeated string roadmap_ids = 1;
+}
+
+message RoadmapNamesResponse {
+  map<string, string> roadmap_names = 1;  // id -> name mapping
+}
+```
+
+### Testing with grpcurl
+
+```bash
+# List available services
+grpcurl -plaintext localhost:9083 list
+
+# Get single roadmap name
+grpcurl -plaintext -d '{"roadmap_id": "abc123"}' localhost:9083 roadmap.RoadmapLookupService/GetRoadmapName
+
+# Get multiple roadmap names
+grpcurl -plaintext -d '{"roadmap_ids": ["abc123", "def456"]}' localhost:9083 roadmap.RoadmapLookupService/GetRoadmapNames
+```
 
 ## Access Scopes
 

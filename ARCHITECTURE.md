@@ -9,6 +9,7 @@ For detailed architecture documentation of each service, please refer to their r
 - **[Roadmap Service Architecture](./roadmap-service/ARCHITECTURE.md)** - Roadmap management, permissions, progress tracking
 - **[Roadmap AI Service Architecture](./roadmap-ai-service/ARCHITECTURE.md)** - AI integration, RAG, vector store
 - **[File Service Architecture](./file-service/ARCHITECTURE.md)** - File storage, MinIO integration
+- **[Storage Service Architecture](./storage-service/ARCHITECTURE.md)** - Storage service foundation
 - **[Learning Service Architecture](./learning-service/ARCHITECTURE.md)** - Quiz management
 - **[Payment Service Architecture](./payment-service/ARCHITECTURE.md)** - Credit management, Stripe integration
 - **[Frontend Architecture](./memap-frontend/ARCHITECTURE.md)** - React application architecture
@@ -139,12 +140,15 @@ profile-service/
 
 **Responsibility**: Learning roadmap management
 
+**gRPC Port**: `9083` - Exposes `RoadmapLookupService` for inter-service roadmap name lookups
+
 ```
 roadmap-service/
 ├── controller/     # Roadmap, Node endpoints
 ├── dto/           # Roadmap DTOs
 ├── entity/        # Roadmap, Node, Permission
 ├── service/       # Roadmap business logic
+├── grpc/          # gRPC service implementation
 ├── event/         # Domain events
 └── mapper/        # Entity-DTO mapping
 ```
@@ -200,6 +204,24 @@ file-service/
 - Metadata management
 - Pre-signed URLs
 
+### Storage Service (Port 8088)
+
+**Responsibility**: Storage service foundation (setup only)
+
+```
+storage-service/
+├── controller/     # REST controllers (placeholder)
+├── dto/           # Request/Response DTOs
+├── entity/        # Metadata entities (placeholder)
+├── service/       # Storage business logic (placeholder)
+└── config/        # Security/OpenAPI configuration
+```
+
+**Key Features**:
+
+- Configuration scaffolding
+- Shared error handling and API response conventions
+
 ### Payment Service (Port 8087)
 
 **Responsibility**: Payment processing and credit management
@@ -226,9 +248,34 @@ payment-service/           # NestJS Application
 - Payment history and invoices
 - Feature usage metering (AI, storage)
 
+### Learning Service (Port 8089)
+
+**Responsibility**: Quiz and assessment management
+
+```
+learning-serice/
+├── controller/     # Quiz endpoints
+├── dto/           # Request/Response DTOs
+├── entity/        # Quiz, Question, Option
+├── service/       # Quiz business logic
+├── client/grpc/   # gRPC client for Roadmap Service
+├── mapper/        # Entity-DTO mapping
+└── repository/    # Data access
+```
+
+**Key Features**:
+
+- Quiz CRUD operations
+- Question and option management
+- Visibility control (draft/published)
+- Roadmap integration via gRPC
+- Role-based access (Teacher-only)
+
+**gRPC Client**: Connects to Roadmap Service at port `9083` for roadmap name lookups
+
 ## Communication Patterns
 
-### Synchronous Communication
+### Synchronous Communication (REST)
 
 ```
 ┌─────────────────┐    HTTP/REST    ┌─────────────────┐
@@ -242,6 +289,27 @@ payment-service/           # NestJS Application
 - Token validation
 - User authentication checks
 - Real-time data fetching
+
+### Synchronous Communication (gRPC)
+
+```
+┌─────────────────┐    gRPC/HTTP2   ┌─────────────────┐
+│Learning Service │───────────────►│ Roadmap Service │
+│    (Client)     │   Port 9083    │    (Server)     │
+└─────────────────┘                 └─────────────────┘
+```
+
+**Use Cases**:
+
+- Roadmap name lookups for quiz enrichment
+- Low-latency inter-service communication
+- Type-safe service contracts via Protocol Buffers
+
+**gRPC Endpoints**:
+
+| Service         | Port | Description                               |
+| --------------- | ---- | ----------------------------------------- |
+| Roadmap Service | 9083 | `RoadmapLookupService` - roadmap metadata |
 
 ### Asynchronous Communication
 

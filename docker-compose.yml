@@ -1,0 +1,152 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:6.0
+    container_name: redis
+    ports:
+      - "6382:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - memap-network
+
+  rabbitmq:
+    image: rabbitmq:4.1.6-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672" # AMQP protocol
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - memap-network
+
+  profile-service:
+    build: ./profile-service
+    container_name: profile-service
+    ports:
+      - "8082:8082"
+    env_file:
+      - ./profile-service/.env
+    depends_on:
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - memap-network
+
+  roadmap-ai-service:
+    build: ./roadmap-ai-service
+    container_name: roadmap-ai-service
+    ports:
+      - "8085:8085"
+    env_file:
+      - ./roadmap-ai-service/.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - memap-network
+
+  roadmap-service:
+    build: ./roadmap-service
+    container_name: roadmap-service
+    ports:
+      - "8083:8083"
+      - "9083:9083" # gRPC server port
+    env_file:
+      - ./roadmap-service/.env
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - memap-network
+
+  learning-service:
+    build: ./learning-serice
+    container_name: learning-service
+    ports:
+      - "8089:8089"
+    env_file:
+      - ./learning-serice/.env
+    environment:
+      - GRPC_CLIENT_ROADMAP_ADDRESS=static://roadmap-service:9083
+    healthcheck:
+      test:
+        ["CMD", "curl", "-f", "http://localhost:8089/learning/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - memap-network
+
+  hocuspocus-server:
+    build: ./hocuspocus-server
+    container_name: hocuspocus-server
+    ports:
+      - "1234:1234"
+    environment:
+      - MONGODB_URL=${MONGODB_URL:-mongodb://roadmap_user:roadmap_pass123@84.247.150.108:27017?authSource=roadmap_service}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - HOCUSPOCUS_PORT=1234
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - memap-network
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8090:8090"
+    env_file:
+      - ./api-gateway/.env
+    depends_on:
+      profile-service:
+        condition: service_started
+      roadmap-service:
+        condition: service_started
+      roadmap-ai-service:
+        condition: service_started
+      learning-service:
+        condition: service_started
+      hocuspocus-server:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - memap-network
+
+volumes:
+  redis-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
+
+networks:
+  memap-network:
+    driver: bridge

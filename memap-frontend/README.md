@@ -127,6 +127,28 @@ npm run lint
 
 ## Configuration
 
+## Roadmap Upload Workflow
+
+Roadmap-originated files now follow one shared frontend flow:
+
+1. Upload the binary to `POST /storage/file/upload` through the existing gateway-backed `axiosInstance`.
+2. Build the canonical asset URL as `{VITE_MEMAP_BACKEND_API}/storage/file/{fileId}/access`.
+3. Persist only that URL in roadmap state or roadmap-service APIs.
+
+This applies to all roadmap upload surfaces:
+
+- Editor images and videos upload to `storage-service`, then the returned access URL is inserted into tiptap content.
+- Node resources upload to `storage-service`, then only the access link is stored in node state.
+- Roadmap cover images upload to `storage-service`, then the frontend sends `PATCH /roadmap/api/roadmap/image/{roadmapId}` with `{ "imageUrl": "..." }`.
+- Roadmap-level shared resources upload to `storage-service`, then the frontend sends `POST /roadmap/api/roadmap/{roadmapId}/resources` with the derived `url`, `title`, and inferred `type`.
+
+The gateway already exposes the required storage routes for the SPA:
+
+- `POST /storage/file/upload`
+- `GET /storage/file/{fileId}/access`
+
+This keeps roadmap-service responsible for link persistence while storage-service remains the only binary ingress path.
+
 ### Environment Variables
 
 Create a `.env` file in the root directory:

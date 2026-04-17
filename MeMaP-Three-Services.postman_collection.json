@@ -1,22 +1,32 @@
 {
   "info": {
-    "name": "MeMaP - Profile, Roadmap & Learning Services",
-    "description": "Postman collection for Profile Service (8082), Roadmap Service (8083), and Learning Service (8089).\n\n## Setup\n1. Import this collection\n2. Select the environment **MeMaP Local**\n3. Call **Login** first — the `token` variable is set automatically via the test script\n4. All other requests use `{{token}}` via Bearer auth",
+    "name": "MeMaP - All Services (Gateway Token Relay)",
+    "description": "Postman collection for all MeMap microservices routed through the API Gateway (port 8090).\n\nAll authenticated requests use `Authorization: Bearer {{token}}` header. The gateway validates the JWT and relays it to downstream services via the TokenRelayFilter.\n\n## Setup\n1. Import this collection\n2. Call **Login** first — the `token` variable is set automatically via the test script\n3. All other requests use `{{token}}` via Bearer auth through the gateway\n\n## Assignment file submission update\n- Upload attachments to Storage Service first\n- Use the returned `fileId` in assignment submission `fileIds`\n- Submission responses now return `files` metadata plus `studentProfile` (with `avatarUrl`) for the UI\n- Raw top-level `fileIds` and `fileUrls` are no longer exposed in the submission response payload\n\n## Focus tracking update\n- Roadmap Service now exposes focus tracking session APIs through the gateway\n- Create sessions with claimed target minutes and actual focused minutes\n- List the current user's paginated focus sessions across roadmaps\n- Retrieve aggregate focus session statistics for dashboard/reporting use cases\n\n## Services\n- Profile Service (gateway: /profile)\n- Roadmap Service (gateway: /roadmap, includes roadmap, assignment, quiz learning module APIs, and focus tracking sessions)\n- AI Service (gateway: /ai)\n- Storage Service (gateway: /storage)\n- Notification Service (gateway: /notification)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "base_profile",  "value": "http://localhost:8082/profile",   "type": "string" },
-    { "key": "base_roadmap",  "value": "http://localhost:8083/road-map",  "type": "string" },
-    { "key": "base_learning", "value": "http://localhost:8089/learning",  "type": "string" },
+    { "key": "base_profile",  "value": "http://localhost:8090/profile",   "type": "string" },
+    { "key": "base_roadmap",  "value": "http://localhost:8090/roadmap",  "type": "string" },
+    { "key": "base_storage",  "value": "http://localhost:8090/storage",  "type": "string" },
+    { "key": "base_ai",       "value": "http://localhost:8090/ai",       "type": "string" },
+    { "key": "base_notification", "value": "http://localhost:8090/notification", "type": "string" },
     { "key": "token",         "value": "",                                 "type": "string" },
     { "key": "userId",        "value": "",                                 "type": "string" },
     { "key": "roadmapId",     "value": "",                                 "type": "string" },
+    { "key": "sessionId",     "value": "",                                 "type": "string" },
+    { "key": "assignmentId",  "value": "",                                 "type": "string" },
+    { "key": "submissionId",  "value": "",                                 "type": "string" },
+    { "key": "commentId",     "value": "",                                 "type": "string" },
+    { "key": "reactionContent", "value": "LIKE",                           "type": "string" },
     { "key": "nodeId",        "value": "",                                 "type": "string" },
     { "key": "edgeId",        "value": "",                                 "type": "string" },
-    { "key": "categoryId",    "value": "",                                 "type": "string" },
+      { "key": "resourceId",    "value": "",                                 "type": "string" },
+      { "key": "categoryId",    "value": "",                                 "type": "string" },
     { "key": "quizId",        "value": "",                                 "type": "string" },
     { "key": "questionId",    "value": "",                                 "type": "string" },
-    { "key": "attemptId",     "value": "",                                 "type": "string" }
+    { "key": "attemptId",     "value": "",                                 "type": "string" },
+    { "key": "fileId",        "value": "",                                 "type": "string" },
+    { "key": "notificationId", "value": "",                                "type": "string" }
   ],
   "auth": {
     "type": "bearer",
@@ -205,7 +215,6 @@
     {
       "name": "🗺️ Roadmap Service",
       "item": [
-
         {
           "name": "Roadmap CRUD",
           "item": [
@@ -230,9 +239,37 @@
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"title\": \"Java Backend Developer Roadmap\",\n  \"description\": \"Complete learning path for becoming a Java backend developer\",\n  \"scope\": \"PRIVATE\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"nodes\": [\n    {\n      \"nodeId\": \"node-1\",\n      \"label\": \"Java Basics\",\n      \"type\": \"default\",\n      \"position\": { \"x\": 100, \"y\": 100 },\n      \"data\": {\n        \"description\": \"Learn Java fundamentals\",\n        \"resources\": []\n      }\n    }\n  ],\n  \"edges\": []\n}"
+                  "raw": "{\n  \"name\": \"Java Backend Developer Roadmap\",\n  \"description\": \"Complete path to become a Java backend developer\",\n  \"roadmapCategoryId\": \"{{categoryId}}\",\n  \"teacherIds\": [],\n  \"studentIds\": []\n}"
                 },
-                "url": { "raw": "{{base_roadmap}}/api/roadmap", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap"] }
+                "url": { "raw": "{{base_roadmap}}/api/roadmap", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap"] },
+                "description": "Create a new roadmap without nodes and edges"
+              }
+            },
+            {
+              "name": "Import AI-Generated Roadmap",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var res = pm.response.json();",
+                      "if (res && res.result && res.result.roadmapId) {",
+                      "    pm.collectionVariables.set('roadmapId', res.result.roadmapId);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"AI Generated Java Backend Roadmap\",\n  \"description\": \"Roadmap imported from AI output\",\n  \"roadmapCategoryId\": \"{{categoryId}}\",\n  \"nodes\": [\n    {\n      \"nodeId\": \"node-1\",\n      \"label\": \"Java Basics\",\n      \"content\": \"Learn syntax, OOP, and collections\",\n      \"trackingStatus\": \"PENDING\",\n      \"nodeType\": \"TOPIC\",\n      \"style\": {\n        \"backgroundColor\": \"#ffffff\",\n        \"width\": 220,\n        \"height\": 100\n      }\n    },\n    {\n      \"nodeId\": \"node-2\",\n      \"label\": \"Spring Boot\",\n      \"content\": \"Build REST APIs and service layers\",\n      \"trackingStatus\": \"PENDING\",\n      \"nodeType\": \"TOPIC\",\n      \"style\": {\n        \"backgroundColor\": \"#f8fafc\",\n        \"width\": 220,\n        \"height\": 100\n      }\n    }\n  ],\n  \"edges\": [\n    {\n      \"edgeId\": \"edge-1\",\n      \"source\": \"node-1\",\n      \"target\": \"node-2\",\n      \"style\": {\n        \"stroke\": \"#0f172a\",\n        \"strokeWidth\": 2\n      }\n    }\n  ],\n  \"teacherIds\": [],\n  \"studentIds\": []\n}"
+                },
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/ai-generated", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "ai-generated"] },
+                "description": "Create a roadmap with nodes and edges from AI output in one call"
               }
             },
             {
@@ -240,7 +277,8 @@
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}"] }
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}"] },
+                "description": "Roadmap detail response includes `totalStar` and `isStarred` (current user)."
               }
             },
             {
@@ -249,14 +287,17 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_roadmap}}/api/roadmap/my-roadmap?page=1&size=10&scope=ALL&search=",
+                  "raw": "{{base_roadmap}}/api/roadmap/my-roadmap?page=1&size=10&scope=ALL&search=&creationSource=&node=true&edge=true",
                   "host": ["{{base_roadmap}}"],
                   "path": ["api", "roadmap", "my-roadmap"],
                   "query": [
                     { "key": "page", "value": "1" },
                     { "key": "size", "value": "10" },
                     { "key": "scope", "value": "ALL" },
-                    { "key": "search", "value": "" }
+                    { "key": "search", "value": "" },
+                    { "key": "creationSource", "value": "", "disabled": true },
+                    { "key": "node", "value": "true" },
+                    { "key": "edge", "value": "true" }
                   ]
                 }
               }
@@ -285,7 +326,7 @@
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"title\": \"Updated Roadmap Title\",\n  \"description\": \"Updated description\",\n  \"categoryId\": \"{{categoryId}}\"\n}"
+                  "raw": "{\n  \"name\": \"Updated Roadmap Name\",\n  \"description\": \"Updated description\",\n  \"roadmapCategoryId\": \"{{categoryId}}\"\n}"
                 },
                 "url": { "raw": "{{base_roadmap}}/api/roadmap/info/{{roadmapId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "info", "{{roadmapId}}"] }
               }
@@ -303,13 +344,13 @@
               }
             },
             {
-              "name": "Upload Roadmap Image",
+              "name": "Update Roadmap Image",
               "request": {
                 "method": "PATCH",
-                "header": [],
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
-                  "mode": "formdata",
-                  "formdata": [{ "key": "file", "type": "file", "src": "" }]
+                  "mode": "raw",
+                  "raw": "{\n  \"imageUrl\": \"https://example.com/images/roadmap-cover.png\"\n}"
                 },
                 "url": { "raw": "{{base_roadmap}}/api/roadmap/image/{{roadmapId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "image", "{{roadmapId}}"] }
               }
@@ -324,7 +365,6 @@
             }
           ]
         },
-
         {
           "name": "Node Management",
           "item": [
@@ -335,7 +375,7 @@
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"nodeId\": \"{{nodeId}}\",\n  \"label\": \"Advanced Java\",\n  \"type\": \"default\",\n  \"position\": { \"x\": 200, \"y\": 150 },\n  \"data\": {\n    \"description\": \"Learn advanced Java concepts\",\n    \"resources\": [\n      {\n        \"title\": \"Java Documentation\",\n        \"url\": \"https://docs.oracle.com/javase\"\n      }\n    ]\n  }\n}"
+                  "raw": "{\n  \"nodeId\": \"{{nodeId}}\",\n  \"label\": \"Advanced Java\",\n  \"content\": \"Learn advanced Java and JVM topics\",\n  \"nodeType\": \"TOPIC\",\n  \"resources\": [],\n  \"style\": {\n    \"backgroundColor\": \"#ffffff\",\n    \"width\": 220,\n    \"height\": 100\n  },\n  \"status\": \"PENDING\"\n}"
                 },
                 "url": { "raw": "{{base_roadmap}}/api/roadmap/node/{{roadmapId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "node", "{{roadmapId}}"] }
               }
@@ -347,14 +387,13 @@
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"nodeId\": \"{{nodeId}}\",\n  \"status\": \"DONE\"\n}"
+                  "raw": "{\n  \"nodeId\": \"{{nodeId}}\",\n  \"status\": \"IN_PROGRESS\"\n}"
                 },
                 "url": { "raw": "{{base_roadmap}}/api/roadmap/node/status/{{roadmapId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "node", "status", "{{roadmapId}}"] }
               }
             }
           ]
         },
-
         {
           "name": "Edge Management",
           "item": [
@@ -365,14 +404,238 @@
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"edgeId\": \"{{edgeId}}\",\n  \"source\": \"node-1\",\n  \"target\": \"node-2\",\n  \"type\": \"smoothstep\",\n  \"label\": \"Next Step\"\n}"
+                  "raw": "{\n  \"edgeId\": \"{{edgeId}}\",\n  \"source\": \"node-1\",\n  \"target\": \"node-2\",\n  \"style\": {\n    \"stroke\": \"#000000\",\n    \"strokeWidth\": 2\n  }\n}"
                 },
                 "url": { "raw": "{{base_roadmap}}/api/roadmap/edge/{{roadmapId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "edge", "{{roadmapId}}"] }
               }
             }
           ]
         },
-
+        {
+          "name": "Resource Links",
+          "item": [
+            {
+              "name": "Add Resource Link",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"url\": \"https://docs.oracle.com/en/java/\",\n  \"title\": \"Java Docs\",\n  \"type\": \"DOCUMENTATION\"\n}"
+                },
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/resources", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "resources"] }
+              }
+            },
+            {
+              "name": "List Resource Links",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/resources", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "resources"] }
+              }
+            },
+            {
+              "name": "Remove Resource Link",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/resources/{{resourceId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "resources", "{{resourceId}}"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Comments",
+          "item": [
+            {
+              "name": "Create Roadmap Comment",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var res = pm.response.json();",
+                      "if (res && res.result && res.result.id) {",
+                      "    pm.collectionVariables.set('commentId', res.result.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"replyTo\": null,\n  \"content\": \"This roadmap structure looks good.\"\n}"
+                },
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/comments", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "comments"] }
+              }
+            },
+            {
+              "name": "Reply To Roadmap Comment",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var res = pm.response.json();",
+                      "if (res && res.result && res.result.id) {",
+                      "    pm.collectionVariables.set('commentId', res.result.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"replyTo\": \"{{commentId}}\",\n  \"content\": \"I agree with this comment.\"\n}"
+                },
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/comments", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "comments"] }
+              }
+            },
+            {
+              "name": "Create Node Comment",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var res = pm.response.json();",
+                      "if (res && res.result && res.result.id) {",
+                      "    pm.collectionVariables.set('commentId', res.result.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"replyTo\": null,\n  \"content\": \"This node needs more examples and references.\"\n}"
+                },
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/nodes/{{nodeId}}/comments", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "nodes", "{{nodeId}}", "comments"] }
+              }
+            },
+            {
+              "name": "Get Comment by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/comments/{{commentId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "comments", "{{commentId}}"] }
+              }
+            },
+            {
+              "name": "Delete Comment",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/comments/{{commentId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "comments", "{{commentId}}"] }
+              }
+            },
+            {
+              "name": "Get Roadmap Comments",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/comments?page=1&size=10",
+                  "host": ["{{base_roadmap}}"],
+                  "path": ["api", "roadmap", "{{roadmapId}}", "comments"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "size", "value": "10" }
+                  ]
+                },
+                "description": "Paginated root comments. Response shape: PageResponse<CommentResponse>. Each comment/reply includes `likeCount`, `dislikeCount`, and `userReaction`."
+              }
+            },
+            {
+              "name": "Get Node Comments",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/nodes/{{nodeId}}/comments?page=1&size=10",
+                  "host": ["{{base_roadmap}}"],
+                  "path": ["api", "roadmap", "{{roadmapId}}", "nodes", "{{nodeId}}", "comments"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "size", "value": "10" }
+                  ]
+                },
+                "description": "Paginated root comments for a node. Response shape: PageResponse<CommentResponse> with threaded replies and reaction summary fields."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactions",
+          "item": [
+            {
+              "name": "Toggle Roadmap Reaction",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"{{reactionContent}}\"\n}"
+                },
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/reactions", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "reactions"] },
+                "description": "Allowed values: LIKE, DISLIKE, LOVE, HAHA, WOW, SAD, ANGRY, STAR"
+              }
+            },
+            {
+              "name": "Toggle Comment Reaction",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"LOVE\"\n}"
+                },
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/comments/{{commentId}}/reactions", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "comments", "{{commentId}}", "reactions"] },
+                "description": "Allowed values: LIKE, DISLIKE, LOVE, HAHA, WOW, SAD, ANGRY, STAR"
+              }
+            },
+            {
+              "name": "Toggle Comment Reaction - HAHA",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"content\": \"HAHA\"\n}"
+                },
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/comments/{{commentId}}/reactions", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "comments", "{{commentId}}", "reactions"] }
+              }
+            },
+            {
+              "name": "Get Roadmap Reactions",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/reactions", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "reactions"] }
+              }
+            },
+            {
+              "name": "Get Comment Reactions",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/comments/{{commentId}}/reactions", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "comments", "{{commentId}}", "reactions"] }
+              }
+            }
+          ]
+        },
         {
           "name": "Progress Tracking",
           "item": [
@@ -422,7 +685,77 @@
             }
           ]
         },
-
+        {
+          "name": "Focus Tracking",
+          "item": [
+            {
+              "name": "Create Focus Session",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var res = pm.response.json();",
+                      "if (res && res.result && res.result.id) {",
+                      "    pm.collectionVariables.set('sessionId', res.result.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"claimTargetMinutes\": 25\n}"
+                },
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/focus-tracking/sessions", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "focus-tracking", "sessions"] },
+                "description": "Create one focus session for the current user on the selected roadmap. Body only accepts `claimTargetMinutes` as a non-negative integer. The backend initializes `focusedMinutes` to `0`. If the response contains an `id`, it is stored in `{{sessionId}}` for the update request."
+              }
+            },
+            {
+              "name": "Update Focused Minutes",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"focusedMinutes\": 30\n}"
+                },
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/focus-tracking/sessions/{{sessionId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "focus-tracking", "sessions", "{{sessionId}}"] },
+                "description": "Update `focusedMinutes` for an existing focus session owned by the current user. Body only accepts `focusedMinutes` as a non-negative integer. Use the `sessionId` returned from Create Focus Session."
+              }
+            },
+            {
+              "name": "Get My Focus Sessions",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_roadmap}}/api/roadmap/focus-tracking/sessions?page=1&size=10",
+                  "host": ["{{base_roadmap}}"],
+                  "path": ["api", "roadmap", "focus-tracking", "sessions"],
+                  "query": [
+                    { "key": "page", "value": "1" },
+                    { "key": "size", "value": "10" }
+                  ]
+                },
+                "description": "Get paginated focus sessions for the current user across all roadmaps. Results are ordered by `createdDate` descending. The roadmap service uses 1-based paging for this endpoint."
+              }
+            },
+            {
+              "name": "Get My Focus Statistics",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/focus-tracking/statistics", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "focus-tracking", "statistics"] },
+                "description": "Get aggregate focus statistics for the current user. Response includes `totalSessions`, `validSessions`, `trashSessions`, `reachedClaimSessions`, `totalFocusedMinutes`, and `totalClaimTargetMinutes`."
+              }
+            }
+          ]
+        },
         {
           "name": "Categories",
           "item": [
@@ -436,20 +769,6 @@
             },
             {
               "name": "Create Category",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "var res = pm.response.json();",
-                      "if (res && res.result && res.result.categoryId) {",
-                      "    pm.collectionVariables.set('categoryId', res.result.categoryId);",
-                      "}"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
               "request": {
                 "method": "POST",
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
@@ -457,12 +776,12 @@
                   "mode": "raw",
                   "raw": "{\n  \"name\": \"DevOps\",\n  \"description\": \"DevOps practices and tools\",\n  \"icon\": \"server\"\n}"
                 },
-                "url": { "raw": "{{base_roadmap}}/api/roadmap-category", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap-category"] }
+                "url": { "raw": "{{base_roadmap}}/api/roadmap-category", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap-category"] },
+                "description": "This endpoint returns a boolean result and does not auto-populate {{categoryId}}"
               }
             }
           ]
         },
-
         {
           "name": "Access Permissions",
           "item": [
@@ -475,13 +794,39 @@
               }
             },
             {
+              "name": "Get Teachers Only",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/permissions?role=TEACHER",
+                  "host": ["{{base_roadmap}}"],
+                  "path": ["api", "roadmap", "{{roadmapId}}", "permissions"],
+                  "query": [{ "key": "role", "value": "TEACHER" }]
+                }
+              }
+            },
+            {
+              "name": "Get Students Only",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/permissions?role=STUDENT",
+                  "host": ["{{base_roadmap}}"],
+                  "path": ["api", "roadmap", "{{roadmapId}}", "permissions"],
+                  "query": [{ "key": "role", "value": "STUDENT" }]
+                }
+              }
+            },
+            {
               "name": "Add User Permission",
               "request": {
                 "method": "POST",
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"permission\": \"EDITOR\",\n  \"canEdit\": true,\n  \"canView\": true\n}"
+                  "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"permission\": \"VIEW\"\n}"
                 },
                 "url": { "raw": "{{base_roadmap}}/api/roadmap/scope/user/{{roadmapId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "scope", "user", "{{roadmapId}}"] }
               }
@@ -497,43 +842,732 @@
                 },
                 "url": { "raw": "{{base_roadmap}}/api/roadmap/scope/user/{{roadmapId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "scope", "user", "{{roadmapId}}"] }
               }
+            },
+            {
+              "name": "Add Teacher",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"permission\": \"EDIT\"\n}"
+                },
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/teachers", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "teachers"] }
+              }
+            },
+            {
+              "name": "Add Student",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"permission\": \"VIEW\"\n}"
+                },
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/students", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "students"] }
+              }
+            },
+            {
+              "name": "Update User Role",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"role\": \"TEACHER\"\n}"
+                },
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/permissions/{{userId}}/role", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "permissions", "{{userId}}", "role"] }
+              }
+            },
+            {
+              "name": "Remove Teacher",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/teachers/{{userId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "teachers", "{{userId}}"] }
+              }
+            },
+            {
+              "name": "Remove Student",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/students/{{userId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "students", "{{userId}}"] }
+              }
             }
           ]
         },
-
         {
-          "name": "Media & Files",
+          "name": "📝 Learning Module (Roadmap Service)",
+          "description": "Assignment and quiz APIs implemented inside `roadmap-service` and routed through the roadmap gateway.",
           "item": [
             {
-              "name": "Upload Media File",
+              "name": "Teacher Assignment Management",
+              "item": [
+                {
+                  "name": "Create Assignment",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "var res = pm.response.json();",
+                          "if (res && res.result && res.result.id) {",
+                          "    pm.collectionVariables.set('assignmentId', res.result.id);",
+                          "}"
+                        ],
+                        "type": "text/javascript"
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"title\": \"Java OOP Practice\",\n  \"description\": \"Submit a short exercise about encapsulation and inheritance\",\n  \"type\": \"TEXT_SUBMISSION\",\n  \"visible\": true,\n  \"startDate\": \"2026-02-01T08:00:00.000+00:00\",\n  \"endDate\": \"2026-12-31T23:59:00.000+00:00\"\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/assignments", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "{{roadmapId}}", "assignments"] },
+                    "description": "Teacher only. Requires roadmap owner or EDIT access. Allowed types: FILE_UPLOAD, TEXT_SUBMISSION."
+                  }
+                },
+                {
+                  "name": "Get Roadmap Assignments",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_roadmap}}/api/roadmap/{{roadmapId}}/assignments?page=1&size=10",
+                      "host": ["{{base_roadmap}}"],
+                      "path": ["api", "roadmap", "{{roadmapId}}", "assignments"],
+                      "query": [
+                        { "key": "page", "value": "1" },
+                        { "key": "size", "value": "10" }
+                      ]
+                    },
+                    "description": "Lists assignments for a roadmap. Students only see visible assignments."
+                  }
+                },
+                {
+                  "name": "Get Assignment Detail",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/assignment/{{assignmentId}}", "host": ["{{base_roadmap}}"], "path": ["api", "assignment", "{{assignmentId}}"] }
+                  }
+                },
+                {
+                  "name": "Update Assignment",
+                  "request": {
+                    "method": "PUT",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"title\": \"Updated Java OOP Practice\",\n  \"description\": \"Updated assignment instructions\",\n  \"visible\": true,\n  \"startDate\": \"2026-02-05T08:00:00.000+00:00\",\n  \"endDate\": \"2026-12-31T23:59:00.000+00:00\"\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/assignment/{{assignmentId}}", "host": ["{{base_roadmap}}"], "path": ["api", "assignment", "{{assignmentId}}"] }
+                  }
+                },
+                {
+                  "name": "Update Assignment File URL",
+                  "request": {
+                    "method": "PATCH",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"fileUrl\": \"https://example.com/files/java-assignment-spec.pdf\"\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/assignment/{{assignmentId}}/file-url", "host": ["{{base_roadmap}}"], "path": ["api", "assignment", "{{assignmentId}}", "file-url"] },
+                    "description": "Only valid for assignments with type FILE_UPLOAD."
+                  }
+                },
+                {
+                  "name": "Get My Assignments",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_roadmap}}/api/assignment/my-assignments?roadmapId={{roadmapId}}&page=1&size=10",
+                      "host": ["{{base_roadmap}}"],
+                      "path": ["api", "assignment", "my-assignments"],
+                      "query": [
+                        { "key": "roadmapId", "value": "{{roadmapId}}", "disabled": true },
+                        { "key": "page", "value": "1" },
+                        { "key": "size", "value": "10" }
+                      ]
+                    },
+                    "description": "Teacher-only listing of assignments created by the current user."
+                  }
+                },
+                {
+                  "name": "Get Assignment Submissions",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_roadmap}}/api/assignment/{{assignmentId}}/submissions?page=1&size=10",
+                      "host": ["{{base_roadmap}}"],
+                      "path": ["api", "assignment", "{{assignmentId}}", "submissions"],
+                      "query": [
+                        { "key": "page", "value": "1" },
+                        { "key": "size", "value": "10" }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "name": "Grade Submission",
+                  "request": {
+                    "method": "PATCH",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"grade\": 85,\n  \"feedback\": \"Good job — add a bit more detail on inheritance.\"\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/assignment/{{assignmentId}}/submissions/{{submissionId}}/grade", "host": ["{{base_roadmap}}"], "path": ["api", "assignment", "{{assignmentId}}", "submissions", "{{submissionId}}", "grade"] }
+                  }
+                },
+                {
+                  "name": "Delete Assignment",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/assignment/{{assignmentId}}", "host": ["{{base_roadmap}}"], "path": ["api", "assignment", "{{assignmentId}}"] }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Student Assignment Submission",
+              "item": [
+                {
+                  "name": "Submit Assignment",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "var res = pm.response.json();",
+                          "if (res && res.result && res.result.id) {",
+                          "    pm.collectionVariables.set('submissionId', res.result.id);",
+                          "}"
+                        ],
+                        "type": "text/javascript"
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"textContent\": \"My solution explains encapsulation, inheritance, and polymorphism.\",\n  \"fileIds\": [\n    \"{{fileId}}\"\n  ]\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/assignment/{{assignmentId}}/submit", "host": ["{{base_roadmap}}"], "path": ["api", "assignment", "{{assignmentId}}", "submit"] },
+                    "description": "Student-only. Upload the file to Storage Service first, then submit the returned `fileId` in `fileIds`. At least one of `textContent` or `fileIds` must be provided."
+                  }
+                },
+                {
+                  "name": "Get My Submission",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/assignment/{{assignmentId}}/my-submission", "host": ["{{base_roadmap}}"], "path": ["api", "assignment", "{{assignmentId}}", "my-submission"] },
+                    "description": "Returns resolved `files` metadata and `studentProfile` (`userId`, `displayName`, `avatarUrl`) for the UI when attachments/profile data exist."
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Quiz Management (TEACHER)",
+              "item": [
+                {
+                  "name": "Create Quiz",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "var res = pm.response.json();",
+                          "if (res && res.result) {",
+                          "    var id = res.result.id || res.result.quizId;",
+                          "    if (id) pm.collectionVariables.set('quizId', id);",
+                          "}"
+                        ],
+                        "type": "text/javascript"
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"title\": \"JavaScript Fundamentals\",\n  \"description\": \"Test variables, functions, and control flow.\",\n  \"roadmapId\": \"{{roadmapId}}\",\n  \"difficulty\": \"EASY\",\n  \"durationMinutes\": 10,\n  \"passingScore\": 70.0,\n  \"maxAttempts\": 3,\n  \"startDate\": \"2026-02-01T08:00:00\",\n  \"endDate\": \"2026-12-31T23:59:00\",\n  \"visible\": false\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes"] }
+                  }
+                },
+                {
+                  "name": "Get My Quizzes",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_roadmap}}/api/v1/quizzes/my-quizzes?page=0&size=10&sortBy=createdAt&sortDir=desc",
+                      "host": ["{{base_roadmap}}"],
+                      "path": ["api", "v1", "quizzes", "my-quizzes"],
+                      "query": [
+                        { "key": "roadmapId", "value": "", "disabled": true },
+                        { "key": "visible", "value": "", "disabled": true },
+                        { "key": "search", "value": "", "disabled": true },
+                        { "key": "page", "value": "0" },
+                        { "key": "size", "value": "10" },
+                        { "key": "sortBy", "value": "createdAt" },
+                        { "key": "sortDir", "value": "desc" }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "name": "Get Quiz by ID (Teacher View)",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}"] }
+                  }
+                },
+                {
+                  "name": "Update Quiz (DRAFT only)",
+                  "request": {
+                    "method": "PUT",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"title\": \"Updated Quiz Title\",\n  \"description\": \"Updated description\",\n  \"difficulty\": \"MEDIUM\",\n  \"durationMinutes\": 15,\n  \"passingScore\": 75.0,\n  \"maxAttempts\": 5\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}"] }
+                  }
+                },
+                {
+                  "name": "Toggle Quiz Visibility",
+                  "request": {
+                    "method": "PUT",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"visible\": true\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/visibility", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "visibility"] }
+                  }
+                },
+                {
+                  "name": "Delete Quiz (DRAFT only)",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}"] }
+                  }
+                },
+                {
+                  "name": "Publish Quiz ⚠️ (Planned)",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/publish", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "publish"] },
+                    "description": "⚠️ NOT YET IMPLEMENTED in the current codebase. Use Toggle Quiz Visibility instead."
+                  }
+                },
+                {
+                  "name": "Archive Quiz ⚠️ (Planned)",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/archive", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "archive"] },
+                    "description": "⚠️ NOT YET IMPLEMENTED in the current codebase."
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Question Management (TEACHER)",
+              "item": [
+                {
+                  "name": "Create Question — Multiple Choice",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "var res = pm.response.json();",
+                          "if (res && res.result && res.result.id) {",
+                          "    pm.collectionVariables.set('questionId', res.result.id);",
+                          "}"
+                        ],
+                        "type": "text/javascript"
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"questionText\": \"What is the output of console.log(typeof [])?\",\n  \"questionType\": \"MULTIPLE_CHOICE\",\n  \"points\": 10,\n  \"codeSnippet\": null,\n  \"explanation\": \"Arrays in JavaScript are objects, so typeof returns 'object'.\",\n  \"options\": [\n    { \"optionText\": \"object\", \"isCorrect\": true, \"orderIndex\": 1 },\n    { \"optionText\": \"array\", \"isCorrect\": false, \"orderIndex\": 2 },\n    { \"optionText\": \"undefined\", \"isCorrect\": false, \"orderIndex\": 3 },\n    { \"optionText\": \"string\", \"isCorrect\": false, \"orderIndex\": 4 }\n  ]\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/questions", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions"] }
+                  }
+                },
+                {
+                  "name": "Create Question — True/False",
+                  "request": {
+                    "method": "POST",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"questionText\": \"JavaScript is case-sensitive.\",\n  \"questionType\": \"TRUE_FALSE\",\n  \"points\": 5,\n  \"explanation\": \"JavaScript treats 'myVar' and 'myvar' as different variables.\",\n  \"options\": [\n    { \"optionText\": \"True\", \"isCorrect\": true, \"orderIndex\": 1 },\n    { \"optionText\": \"False\", \"isCorrect\": false, \"orderIndex\": 2 }\n  ]\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/questions", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions"] }
+                  }
+                },
+                {
+                  "name": "Create Question — Short Answer",
+                  "request": {
+                    "method": "POST",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"questionText\": \"What keyword is used to declare a constant in JavaScript?\",\n  \"questionType\": \"SHORT_ANSWER\",\n  \"points\": 10,\n  \"correctAnswer\": \"const\",\n  \"explanation\": \"The 'const' keyword declares a constant that cannot be reassigned.\"\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/questions", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions"] }
+                  }
+                },
+                {
+                  "name": "Get All Questions for Quiz",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/questions", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions"] }
+                  }
+                },
+                {
+                  "name": "Get Question by ID",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/questions/{{questionId}}", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions", "{{questionId}}"] }
+                  }
+                },
+                {
+                  "name": "Update Question",
+                  "request": {
+                    "method": "PUT",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"questionText\": \"Updated question text?\",\n  \"points\": 15,\n  \"explanation\": \"Updated explanation.\",\n  \"options\": [\n    { \"optionText\": \"New Option A\", \"isCorrect\": true, \"orderIndex\": 1 },\n    { \"optionText\": \"New Option B\", \"isCorrect\": false, \"orderIndex\": 2 },\n    { \"optionText\": \"New Option C\", \"isCorrect\": false, \"orderIndex\": 3 }\n  ]\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/questions/{{questionId}}", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions", "{{questionId}}"] }
+                  }
+                },
+                {
+                  "name": "Delete Question (Soft)",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/questions/{{questionId}}", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions", "{{questionId}}"] }
+                  }
+                },
+                {
+                  "name": "Reorder Questions",
+                  "request": {
+                    "method": "PUT",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"questionIds\": [\n    \"uuid-q3\",\n    \"uuid-q1\",\n    \"uuid-q2\"\n  ]\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/questions/reorder", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions", "reorder"] }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Quiz Attempts — Teacher View",
+              "item": [
+                {
+                  "name": "Get All Attempts for Quiz",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/attempts?page=0&size=10",
+                      "host": ["{{base_roadmap}}"],
+                      "path": ["api", "v1", "quizzes", "{{quizId}}", "attempts"],
+                      "query": [
+                        { "key": "page", "value": "0" },
+                        { "key": "size", "value": "10" }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "name": "Get Attempt Detail",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/attempts/{{attemptId}}", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "attempts", "{{attemptId}}"] }
+                  }
+                },
+                {
+                  "name": "Get Quiz Statistics",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/statistics", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "statistics"] }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Quiz Taking — Student",
+              "item": [
+                {
+                  "name": "Get Available Quizzes",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_roadmap}}/api/v1/quizzes/available?page=0&size=10&sort=title,asc",
+                      "host": ["{{base_roadmap}}"],
+                      "path": ["api", "v1", "quizzes", "available"],
+                      "query": [
+                        { "key": "page", "value": "0" },
+                        { "key": "size", "value": "10" },
+                        { "key": "sort", "value": "title,asc" }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "name": "Check Active Attempt by Quiz",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_roadmap}}/api/v1/quiz-attempts/active?quizId={{quizId}}",
+                      "host": ["{{base_roadmap}}"],
+                      "path": ["api", "v1", "quiz-attempts", "active"],
+                      "query": [
+                        { "key": "quizId", "value": "{{quizId}}" }
+                      ]
+                    }
+                  },
+                  "description": "Student-only helper endpoint to decide whether the UI should START or CONTINUE a quiz attempt."
+                },
+                {
+                  "name": "Start Quiz Attempt (Frontend)",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "var res = pm.response.json();",
+                          "if (res && res.result) {",
+                          "    var id = res.result.attemptId || res.result.id;",
+                          "    if (id) pm.collectionVariables.set('attemptId', id);",
+                          "}"
+                        ],
+                        "type": "text/javascript"
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/attempts/start", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "attempts", "start"] }
+                  },
+                  "description": "Preferred student start endpoint from `StudentQuizAttemptController`; returns full attempt status with questions."
+                },
+                {
+                  "name": "Get Attempt Status",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quiz-attempts/{{attemptId}}/status", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quiz-attempts", "{{attemptId}}", "status"] }
+                  }
+                },
+                {
+                  "name": "Check Specific Attempt Active",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quiz-attempts/{{attemptId}}/active", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quiz-attempts", "{{attemptId}}", "active"] }
+                  }
+                },
+                {
+                  "name": "Auto-save Attempt",
+                  "request": {
+                    "method": "PUT",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"answers\": [\n    {\n      \"questionId\": \"{{questionId}}\",\n      \"selectedOptionId\": \"uuid-option-1\",\n      \"selectedOptionIds\": [\"uuid-option-1\"],\n      \"textAnswer\": null\n    }\n  ],\n  \"flaggedQuestionIds\": [\n    \"{{questionId}}\"\n  ]\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quiz-attempts/{{attemptId}}/auto-save", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quiz-attempts", "{{attemptId}}", "auto-save"] }
+                  },
+                  "description": "Matches `AutoSaveAttemptRequest` and can save answers plus flagged questions during an in-progress attempt."
+                },
+                {
+                  "name": "Submit Quiz Attempt (Frontend)",
+                  "request": {
+                    "method": "POST",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"answers\": [\n    {\n      \"questionId\": \"uuid-question-1\",\n      \"selectedOptionId\": \"uuid-option-3\"\n    },\n    {\n      \"questionId\": \"uuid-question-3\",\n      \"textAnswer\": \"const\"\n    }\n  ]\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quiz-attempts/{{attemptId}}/submit", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quiz-attempts", "{{attemptId}}", "submit"] }
+                  },
+                  "description": "Preferred student submit endpoint from `StudentQuizAttemptController`."
+                },
+                {
+                  "name": "Get Attempt Count",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/attempts/count", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "attempts", "count"] }
+                  }
+                },
+                {
+                  "name": "Start Quiz Attempt (Legacy)",
+                  "event": [
+                    {
+                      "listen": "test",
+                      "script": {
+                        "exec": [
+                          "var res = pm.response.json();",
+                          "if (res && res.result) {",
+                          "    var id = res.result.attemptId || res.result.id;",
+                          "    if (id) pm.collectionVariables.set('attemptId', id);",
+                          "}"
+                        ],
+                        "type": "text/javascript"
+                      }
+                    }
+                  ],
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/quizzes/{{quizId}}/attempts", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "attempts"] }
+                  },
+                  "description": "Legacy start endpoint from `QuizAttemptController`; still available for compatibility."
+                },
+                {
+                  "name": "Submit Quiz Attempt (Legacy)",
+                  "request": {
+                    "method": "PUT",
+                    "header": [{ "key": "Content-Type", "value": "application/json" }],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"answers\": [\n    {\n      \"questionId\": \"uuid-question-1\",\n      \"selectedOptionId\": \"uuid-option-3\"\n    },\n    {\n      \"questionId\": \"uuid-question-3\",\n      \"textAnswer\": \"const\"\n    }\n  ]\n}"
+                    },
+                    "url": { "raw": "{{base_roadmap}}/api/v1/attempts/{{attemptId}}/submit", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "attempts", "{{attemptId}}", "submit"] }
+                  },
+                  "description": "Legacy submit endpoint from `QuizAttemptController`; payload uses `selectedOptionId` and `textAnswer`."
+                },
+                {
+                  "name": "Get Attempt Result",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": { "raw": "{{base_roadmap}}/api/v1/attempts/{{attemptId}}", "host": ["{{base_roadmap}}"], "path": ["api", "v1", "attempts", "{{attemptId}}"] }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "name": "📦 Storage Service",
+      "item": [
+
+        {
+          "name": "File Management",
+          "item": [
+            {
+              "name": "Upload File",
+              "description": "Uploads a file to Storage Service and stores the returned `fileId` in the collection variable. Reuse `{{fileId}}` in assignment submission `fileIds`.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "var res = pm.response.json();",
+                      "if (res && res.result && res.result.fileId) {",
+                      "    pm.collectionVariables.set('fileId', res.result.fileId);",
+                      "    console.log('fileId set: ' + res.result.fileId);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
               "request": {
                 "method": "POST",
                 "header": [],
                 "body": {
                   "mode": "formdata",
-                  "formdata": [{ "key": "file", "type": "file", "src": "" }]
+                  "formdata": [
+                    { "key": "file", "type": "file", "src": "" },
+                    { "key": "customName", "value": "my-document", "type": "text" }
+                  ]
                 },
-                "url": { "raw": "{{base_roadmap}}/api/roadmap/media/upload/{{roadmapId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "media", "upload", "{{roadmapId}}"] }
+                "url": { "raw": "{{base_storage}}/file/upload", "host": ["{{base_storage}}"], "path": ["file", "upload"] }
               }
             },
             {
-              "name": "Download Media File",
+              "name": "Get File Info",
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": { "raw": "{{base_roadmap}}/api/roadmap/media/download/{{roadmapId}}/filename.pdf", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "media", "download", "{{roadmapId}}", "filename.pdf"] }
+                "url": { "raw": "{{base_storage}}/file/{{fileId}}", "host": ["{{base_storage}}"], "path": ["file", "{{fileId}}"] }
               }
             },
             {
-              "name": "Upload File Resource",
+              "name": "Download File",
               "request": {
-                "method": "POST",
+                "method": "GET",
                 "header": [],
-                "body": {
-                  "mode": "formdata",
-                  "formdata": [{ "key": "file", "type": "file", "src": "" }]
-                },
-                "url": { "raw": "{{base_roadmap}}/api/roadmap/resource/upload/file/{{roadmapId}}", "host": ["{{base_roadmap}}"], "path": ["api", "roadmap", "resource", "upload", "file", "{{roadmapId}}"] }
+                "url": { "raw": "{{base_storage}}/file/{{fileId}}/download", "host": ["{{base_storage}}"], "path": ["file", "{{fileId}}", "download"] }
+              }
+            },
+            {
+              "name": "Access File (Public)",
+              "request": {
+                "auth": { "type": "noauth" },
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_storage}}/file/{{fileId}}/access", "host": ["{{base_storage}}"], "path": ["file", "{{fileId}}", "access"] }
+              }
+            },
+            {
+              "name": "List My Files",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_storage}}/file/my-files", "host": ["{{base_storage}}"], "path": ["file", "my-files"] }
+              }
+            },
+            {
+              "name": "Delete File",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": { "raw": "{{base_storage}}/file/{{fileId}}", "host": ["{{base_storage}}"], "path": ["file", "{{fileId}}"] }
               }
             }
           ]
@@ -543,126 +1577,112 @@
     },
 
     {
-      "name": "📚 Learning Service",
+      "name": "🤖 AI Service",
       "item": [
 
         {
-          "name": "Quiz Management (TEACHER)",
+          "name": "Roadmap Generation",
           "item": [
             {
-              "name": "Create Quiz",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "var res = pm.response.json();",
-                      "if (res && res.result) {",
-                      "    var id = res.result.id || res.result.quizId;",
-                      "    if (id) pm.collectionVariables.set('quizId', id);",
-                      "}"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
+              "name": "Generate Roadmap (POST)",
               "request": {
                 "method": "POST",
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"title\": \"JavaScript Fundamentals\",\n  \"description\": \"Test variables, functions, and control flow.\",\n  \"roadmapId\": \"{{roadmapId}}\",\n  \"difficulty\": \"EASY\",\n  \"timeLimitMins\": 10,\n  \"passingScore\": 70.0,\n  \"maxAttempts\": 3,\n  \"startDate\": \"2026-02-01T08:00:00\",\n  \"endDate\": \"2026-12-31T23:59:00\",\n  \"visible\": false\n}"
+                  "raw": "{\n  \"topic\": \"Java Backend Developer\",\n  \"description\": \"Complete learning path from basics to production\",\n  \"maxNodes\": 15,\n  \"difficulty\": \"BEGINNER\"\n}"
                 },
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes"] }
+                "url": { "raw": "{{base_ai}}/roadmap/generate", "host": ["{{base_ai}}"], "path": ["roadmap", "generate"] }
               }
             },
             {
-              "name": "Get My Quizzes",
+              "name": "Generate Roadmap by Topic (GET)",
               "request": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_learning}}/api/v1/quizzes/my-quizzes?page=0&size=10&sortBy=createdAt&sortDir=desc",
-                  "host": ["{{base_learning}}"],
-                  "path": ["api", "v1", "quizzes", "my-quizzes"],
+                  "raw": "{{base_ai}}/roadmap/generate?topic=React Frontend Developer&maxNodes=15&difficulty=INTERMEDIATE",
+                  "host": ["{{base_ai}}"],
+                  "path": ["roadmap", "generate"],
                   "query": [
-                    { "key": "roadmapId", "value": "", "disabled": true },
-                    { "key": "visible", "value": "", "disabled": true },
-                    { "key": "search", "value": "", "disabled": true },
-                    { "key": "page", "value": "0" },
-                    { "key": "size", "value": "10" },
-                    { "key": "sortBy", "value": "createdAt" },
-                    { "key": "sortDir", "value": "desc" }
+                    { "key": "topic", "value": "React Frontend Developer" },
+                    { "key": "maxNodes", "value": "15" },
+                    { "key": "difficulty", "value": "INTERMEDIATE" }
                   ]
                 }
-              }
-            },
-            {
-              "name": "Get Quiz by ID (Teacher View)",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}"] }
-              }
-            },
-            {
-              "name": "Update Quiz (DRAFT only)",
-              "request": {
-                "method": "PUT",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"title\": \"Updated Quiz Title\",\n  \"description\": \"Updated description\",\n  \"timeLimitMins\": 15,\n  \"passingScore\": 75.0,\n  \"maxAttempts\": 5\n}"
-                },
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}"] }
-              }
-            },
-            {
-              "name": "Toggle Quiz Visibility",
-              "request": {
-                "method": "PUT",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"visible\": true\n}"
-                },
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}/visibility", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "visibility"] }
-              }
-            },
-            {
-              "name": "Delete Quiz (DRAFT only)",
-              "request": {
-                "method": "DELETE",
-                "header": [],
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}"] }
-              }
-            },
-            {
-              "name": "Publish Quiz ⚠️ (Planned)",
-              "request": {
-                "method": "POST",
-                "header": [],
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}/publish", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "publish"] },
-                "description": "⚠️ NOT YET IMPLEMENTED in the current codebase. Use Toggle Quiz Visibility instead."
-              }
-            },
-            {
-              "name": "Archive Quiz ⚠️ (Planned)",
-              "request": {
-                "method": "POST",
-                "header": [],
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}/archive", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "archive"] },
-                "description": "⚠️ NOT YET IMPLEMENTED in the current codebase."
               }
             }
           ]
         },
 
         {
-          "name": "Question Management (TEACHER)",
+          "name": "Node AI Operations",
           "item": [
             {
-              "name": "Create Question — Multiple Choice",
+              "name": "Summarize Node (POST)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"roadmapId\": \"{{roadmapId}}\",\n  \"nodeId\": \"{{nodeId}}\"\n}"
+                },
+                "url": { "raw": "{{base_ai}}/node/summary", "host": ["{{base_ai}}"], "path": ["node", "summary"] }
+              }
+            },
+            {
+              "name": "Summarize Node by Path (GET)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{base_ai}}/node/summary/{{roadmapId}}/{{nodeId}}", "host": ["{{base_ai}}"], "path": ["node", "summary", "{{roadmapId}}", "{{nodeId}}"] }
+              }
+            }
+          ]
+        },
+
+        {
+          "name": "AI Chat",
+          "item": [
+            {
+              "name": "AI Process",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"message\": \"Explain the basics of Spring Boot\",\n  \"context\": \"learning\"\n}"
+                },
+                "url": { "raw": "{{base_ai}}/ai", "host": ["{{base_ai}}"], "path": ["ai"] }
+              }
+            },
+            {
+              "name": "Chat Session Query",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sessionId\": \"session-uuid\",\n  \"message\": \"What should I learn next?\"\n}"
+                },
+                "url": { "raw": "{{base_ai}}/chat/sessions/query", "host": ["{{base_ai}}"], "path": ["chat", "sessions", "query"] }
+              }
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "🔔 Notification Service",
+      "item": [
+
+        {
+          "name": "Notifications",
+          "item": [
+            {
+              "name": "Send Notification",
               "event": [
                 {
                   "listen": "test",
@@ -670,7 +1690,7 @@
                     "exec": [
                       "var res = pm.response.json();",
                       "if (res && res.result && res.result.id) {",
-                      "    pm.collectionVariables.set('questionId', res.result.id);",
+                      "    pm.collectionVariables.set('notificationId', res.result.id);",
                       "}"
                     ],
                     "type": "text/javascript"
@@ -682,184 +1702,41 @@
                 "header": [{ "key": "Content-Type", "value": "application/json" }],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"questionText\": \"What is the output of console.log(typeof [])?\",\n  \"questionType\": \"MULTIPLE_CHOICE\",\n  \"points\": 10,\n  \"codeSnippet\": null,\n  \"explanation\": \"Arrays in JavaScript are objects, so typeof returns 'object'.\",\n  \"options\": [\n    { \"optionText\": \"object\", \"isCorrect\": true, \"orderIndex\": 1 },\n    { \"optionText\": \"array\", \"isCorrect\": false, \"orderIndex\": 2 },\n    { \"optionText\": \"undefined\", \"isCorrect\": false, \"orderIndex\": 3 },\n    { \"optionText\": \"string\", \"isCorrect\": false, \"orderIndex\": 4 }\n  ]\n}"
+                  "raw": "{\n  \"receiverId\": \"{{userId}}\",\n  \"title\": \"New Roadmap Shared\",\n  \"message\": \"A roadmap has been shared with you\",\n  \"type\": \"ROADMAP_SHARED\"\n}"
                 },
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}/questions", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions"] }
+                "url": { "raw": "{{base_notification}}/api/v1/notifications", "host": ["{{base_notification}}"], "path": ["api", "v1", "notifications"] }
               }
             },
             {
-              "name": "Create Question — True/False",
-              "request": {
-                "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"questionText\": \"JavaScript is case-sensitive.\",\n  \"questionType\": \"TRUE_FALSE\",\n  \"points\": 5,\n  \"explanation\": \"JavaScript treats 'myVar' and 'myvar' as different variables.\",\n  \"options\": [\n    { \"optionText\": \"True\", \"isCorrect\": true, \"orderIndex\": 1 },\n    { \"optionText\": \"False\", \"isCorrect\": false, \"orderIndex\": 2 }\n  ]\n}"
-                },
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}/questions", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions"] }
-              }
-            },
-            {
-              "name": "Create Question — Short Answer",
-              "request": {
-                "method": "POST",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"questionText\": \"What keyword is used to declare a constant in JavaScript?\",\n  \"questionType\": \"SHORT_ANSWER\",\n  \"points\": 10,\n  \"correctAnswer\": \"const\",\n  \"explanation\": \"The 'const' keyword declares a constant that cannot be reassigned.\"\n}"
-                },
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}/questions", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions"] }
-              }
-            },
-            {
-              "name": "Get All Questions for Quiz",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}/questions", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions"] }
-              }
-            },
-            {
-              "name": "Get Question by ID",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}/questions/{{questionId}}", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions", "{{questionId}}"] }
-              }
-            },
-            {
-              "name": "Update Question",
-              "request": {
-                "method": "PUT",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"questionText\": \"Updated question text?\",\n  \"points\": 15,\n  \"explanation\": \"Updated explanation.\",\n  \"options\": [\n    { \"optionText\": \"New Option A\", \"isCorrect\": true, \"orderIndex\": 1 },\n    { \"optionText\": \"New Option B\", \"isCorrect\": false, \"orderIndex\": 2 },\n    { \"optionText\": \"New Option C\", \"isCorrect\": false, \"orderIndex\": 3 }\n  ]\n}"
-                },
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}/questions/{{questionId}}", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions", "{{questionId}}"] }
-              }
-            },
-            {
-              "name": "Delete Question (Soft)",
-              "request": {
-                "method": "DELETE",
-                "header": [],
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}/questions/{{questionId}}", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions", "{{questionId}}"] }
-              }
-            },
-            {
-              "name": "Reorder Questions",
-              "request": {
-                "method": "PUT",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"questionIds\": [\n    \"uuid-q3\",\n    \"uuid-q1\",\n    \"uuid-q2\"\n  ]\n}"
-                },
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}/questions/reorder", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "questions", "reorder"] }
-              }
-            }
-          ]
-        },
-
-        {
-          "name": "Quiz Attempts — Teacher View",
-          "item": [
-            {
-              "name": "Get All Attempts for Quiz",
+              "name": "Get My Notifications",
               "request": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}/attempts?page=0&size=10",
-                  "host": ["{{base_learning}}"],
-                  "path": ["api", "v1", "quizzes", "{{quizId}}", "attempts"],
+                  "raw": "{{base_notification}}/api/v1/notifications?page=0&size=20",
+                  "host": ["{{base_notification}}"],
+                  "path": ["api", "v1", "notifications"],
                   "query": [
                     { "key": "page", "value": "0" },
-                    { "key": "size", "value": "10" }
+                    { "key": "size", "value": "20" }
                   ]
                 }
               }
             },
             {
-              "name": "Get Attempt Detail",
+              "name": "Get Notification by ID",
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": { "raw": "{{base_learning}}/api/v1/attempts/{{attemptId}}", "host": ["{{base_learning}}"], "path": ["api", "v1", "attempts", "{{attemptId}}"] }
+                "url": { "raw": "{{base_notification}}/api/v1/notifications/{{notificationId}}", "host": ["{{base_notification}}"], "path": ["api", "v1", "notifications", "{{notificationId}}"] }
               }
             },
             {
-              "name": "Get Quiz Statistics",
+              "name": "Mark Notification as Read",
               "request": {
-                "method": "GET",
+                "method": "PATCH",
                 "header": [],
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}/statistics", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "statistics"] }
-              }
-            }
-          ]
-        },
-
-        {
-          "name": "Quiz Taking — Student",
-          "item": [
-            {
-              "name": "Get Available Quizzes",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{base_learning}}/api/v1/quizzes/available?page=0&size=10&sort=title,asc",
-                  "host": ["{{base_learning}}"],
-                  "path": ["api", "v1", "quizzes", "available"],
-                  "query": [
-                    { "key": "page", "value": "0" },
-                    { "key": "size", "value": "10" },
-                    { "key": "sort", "value": "title,asc" }
-                  ]
-                }
-              }
-            },
-            {
-              "name": "Start Quiz Attempt",
-              "event": [
-                {
-                  "listen": "test",
-                  "script": {
-                    "exec": [
-                      "var res = pm.response.json();",
-                      "if (res && res.result && res.result.id) {",
-                      "    pm.collectionVariables.set('attemptId', res.result.id);",
-                      "}"
-                    ],
-                    "type": "text/javascript"
-                  }
-                }
-              ],
-              "request": {
-                "method": "POST",
-                "header": [],
-                "url": { "raw": "{{base_learning}}/api/v1/quizzes/{{quizId}}/attempts", "host": ["{{base_learning}}"], "path": ["api", "v1", "quizzes", "{{quizId}}", "attempts"] }
-              }
-            },
-            {
-              "name": "Submit Quiz Attempt",
-              "request": {
-                "method": "PUT",
-                "header": [{ "key": "Content-Type", "value": "application/json" }],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"answers\": [\n    {\n      \"questionId\": \"uuid-question-1\",\n      \"selectedOptionIds\": [\"uuid-option-3\"]\n    },\n    {\n      \"questionId\": \"uuid-question-2\",\n      \"selectedOptionIds\": [\"uuid-option-5\"]\n    },\n    {\n      \"questionId\": \"uuid-question-3\",\n      \"shortAnswer\": \"const\"\n    }\n  ]\n}"
-                },
-                "url": { "raw": "{{base_learning}}/api/v1/attempts/{{attemptId}}/submit", "host": ["{{base_learning}}"], "path": ["api", "v1", "attempts", "{{attemptId}}", "submit"] }
-              }
-            },
-            {
-              "name": "Get Attempt Result",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": { "raw": "{{base_learning}}/api/v1/attempts/{{attemptId}}", "host": ["{{base_learning}}"], "path": ["api", "v1", "attempts", "{{attemptId}}"] }
+                "url": { "raw": "{{base_notification}}/api/v1/notifications/{{notificationId}}/read", "host": ["{{base_notification}}"], "path": ["api", "v1", "notifications", "{{notificationId}}", "read"] }
               }
             }
           ]

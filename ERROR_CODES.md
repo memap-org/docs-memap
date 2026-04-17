@@ -53,6 +53,12 @@ MeMap uses standardized error codes across all microservices for consistent erro
 | 1009 | FORBIDDEN                                | You cannot do this action                  | 403         |
 | 1010 | ROADMAP_CATEGORY_NOT_EXIST               | Roadmap category not exist                 | 400         |
 | 1011 | FILE_NOT_FOUND                           | File not found                             | 400         |
+| 1012 | USER_NOT_FOUND                           | User not found                             | 404         |
+| 1013 | USER_NOT_TEACHER                         | User is not a teacher of this roadmap      | 403         |
+| 1014 | USER_NOT_STUDENT                         | User is not a student of this roadmap      | 403         |
+| 1015 | INVALID_AI_ROADMAP_PAYLOAD               | Invalid AI roadmap payload                 | 400         |
+| 1016 | RESOURCE_NOT_FOUND                       | Resource not found in roadmap              | 404         |
+| 1017 | INVALID_RESOURCE_URL                     | Invalid resource URL                       | 400         |
 
 ---
 

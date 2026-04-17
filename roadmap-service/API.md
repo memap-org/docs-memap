@@ -622,16 +622,95 @@ Authorization: Bearer {token}
 
 ---
 
-### File Management
+### Resource Management
 
-#### Upload Roadmap Image
+#### Add Resource Link
+
+```http
+POST /api/roadmap/{roadmapId}/resources
+Content-Type: application/json
+Authorization: Bearer {token}
+
+{
+  "url": "https://storage.memap.id.vn/storage/file/{fileId}/access",
+  "title": "Lecture Notes",
+  "type": "pdf"
+}
+```
+
+**Response:**
+
+```json
+{
+  "code": 1000,
+  "result": {
+    "id": "uuid-string",
+    "url": "https://storage.memap.id.vn/storage/file/{fileId}/access",
+    "title": "Lecture Notes",
+    "type": "pdf",
+    "addedAt": "2026-03-23T10:00:00Z",
+    "addedBy": "user-123"
+  }
+}
+```
+
+---
+
+#### Remove Resource Link
+
+```http
+DELETE /api/roadmap/{roadmapId}/resources/{resourceId}
+Authorization: Bearer {token}
+```
+
+**Response:**
+
+```json
+{
+  "code": 1000,
+  "message": "Resource removed successfully"
+}
+```
+
+---
+
+#### List Resource Links
+
+```http
+GET /api/roadmap/{roadmapId}/resources
+Authorization: Bearer {token}
+```
+
+**Response:**
+
+```json
+{
+  "code": 1000,
+  "result": [
+    {
+      "id": "uuid-1",
+      "url": "https://storage.memap.id.vn/storage/file/abc/access",
+      "title": "Lecture Notes",
+      "type": "pdf",
+      "addedAt": "2026-03-23T10:00:00Z",
+      "addedBy": "user-123"
+    }
+  ]
+}
+```
+
+---
+
+#### Update Roadmap Image
 
 ```http
 PATCH /api/roadmap/image/{roadmapId}
-Content-Type: multipart/form-data
+Content-Type: application/json
 Authorization: Bearer {token}
 
-file: (binary)
+{
+  "imageUrl": "https://storage.memap.id.vn/storage/file/{fileId}/access"
+}
 ```
 
 **Response:**
@@ -641,75 +720,7 @@ file: (binary)
   "code": 1000,
   "message": "Update roadmap image successfully",
   "result": {
-    "fileName": "roadmap-123.jpg",
-    "fileUrl": "https://api.memap.id.vn/files/roadmap-123.jpg",
-    "contentType": "image/jpeg",
-    "size": 102400
-  }
-}
-```
-
----
-
-#### Upload Media File
-
-```http
-POST /api/roadmap/media/upload/{roadmapId}
-Content-Type: multipart/form-data
-Authorization: Bearer {token}
-
-file: (binary)
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "result": {
-    "fileName": "document.pdf",
-    "fileUrl": "https://api.memap.id.vn/files/roadmap-123/document.pdf",
-    "contentType": "application/pdf",
-    "size": 512000
-  }
-}
-```
-
----
-
-#### Download Media File
-
-```http
-GET /api/roadmap/media/download/{roadmapId}/{fileName}
-Authorization: Bearer {token}
-```
-
-**Response:**
-
-- Binary file content with appropriate Content-Type header
-
----
-
-#### Upload File Resource
-
-```http
-POST /api/roadmap/resource/upload/file/{roadmapId}
-Content-Type: multipart/form-data
-Authorization: Bearer {token}
-
-file: (binary)
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "result": {
-    "fileName": "resource.zip",
-    "fileUrl": "https://...",
-    "contentType": "application/zip",
-    "size": 1024000
+    "imageUrl": "https://storage.memap.id.vn/storage/file/{fileId}/access"
   }
 }
 ```

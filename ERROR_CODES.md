@@ -26,15 +26,16 @@ MeMap uses standardized error codes across all microservices for consistent erro
 
 ## Error Code Ranges
 
-| Range     | Service          | Description                      |
-| --------- | ---------------- | -------------------------------- |
-| 1001-1999 | Roadmap Service  | Roadmap, nodes, permissions      |
-| 2001-2999 | Profile Service  | Users, profiles, authentication  |
-| 3001-3999 | Learning Service | Courses, lessons, progress       |
-| 4001-4999 | Storage Service  | File upload/download             |
-| 5001-5999 | AI Service       | AI generation, chat              |
-| 7001-7999 | Payment Service  | Credits, subscriptions, payments |
-| 9999      | All Services     | Uncategorized/unknown errors     |
+| Range     | Service              | Description                      |
+| --------- | -------------------- | -------------------------------- |
+| 1001-1999 | Roadmap Service      | Roadmap, nodes, permissions      |
+| 2001-2999 | Profile Service      | Users, profiles, authentication  |
+| 3001-3999 | Learning Service     | Courses, lessons, progress       |
+| 4001-4999 | Storage Service      | File upload/download             |
+| 5001-5999 | AI Service           | AI generation, chat              |
+| 6001-6099 | Notification Service | Notifications, SSE, internal API |
+| 7001-7999 | Payment Service      | Credits, subscriptions, payments |
+| 9999      | All Services         | Uncategorized/unknown errors     |
 
 ---
 
@@ -148,6 +149,18 @@ MeMap uses standardized error codes across all microservices for consistent erro
 | Code | Name                    | Message             | HTTP Status |
 | ---- | ----------------------- | ------------------- | ----------- |
 | 9999 | UNCATEGORIZED_EXCEPTION | Uncategorized error | 500         |
+
+---
+
+## Notification Service (6xxx)
+
+| Code | Name                   | Message                             | HTTP Status |
+| ---- | ---------------------- | ----------------------------------- | ----------- |
+| 6001 | INVALID_INTERNAL_KEY   | Invalid or missing internal API key | 403         |
+| 6002 | INVALID_EVENT_TYPE     | Invalid notification event type     | 400         |
+| 6003 | NOTIFICATION_NOT_FOUND | Notification not found              | 404         |
+
+---
 
 ---
 

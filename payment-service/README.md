@@ -2,329 +2,115 @@
 
 ## Overview
 
-The Payment Service is a NestJS-based microservice that handles all payment and credit management for the MeMap platform. It integrates with Stripe for secure payment processing and manages user credits for premium features including AI roadmap generation, storage upgrades, and advanced learning features.
+The Payment Service is a **Spring Boot 3.x + MongoDB** microservice that handles monetization for the MeMap platform — credit accounts, subscription plans, and Stripe payment integration.
 
 ## Key Features
 
-- **Credit Management**: Purchase, track, and consume credits for platform features
-- **Stripe Integration**: Secure payment processing with Stripe Checkout and webhooks
-- **Subscription Plans**: Support for different pricing tiers (Free, Pro, Enterprise)
-- **Usage Metering**: Track AI feature usage, storage consumption, and roadmap limits
-- **Invoice Management**: Generate and retrieve payment history and invoices
-- **Webhook Handling**: Process Stripe events for payment confirmations and failures
-- **Credit Transactions**: Detailed transaction history and audit trail
+- **Credit Management**: Per-user credit balance and transaction ledger (purchase, usage, refund, bonus)
+- **Stripe Integration**: Checkout sessions, customer mapping, webhook ingestion with signature verification
+- **Subscription Plans**: Free / Pro / Enterprise tiers with monthly credit grants
+- **Usage Metering**: Track AI feature usage, storage, and quiz consumption
+- **Payment History**: Full transaction audit trail
+- **Webhook Idempotency**: Processed event store with 30-day TTL
 
 ## Technology Stack
 
-- **Framework**: NestJS 10.x
-- **Language**: TypeScript 5.x
-- **Database**: PostgreSQL 15+
-- **ORM**: TypeORM / Prisma
-- **Payment Gateway**: Stripe API
-- **Authentication**: OAuth2 Resource Server (Keycloak)
-- **Validation**: class-validator, class-transformer
-- **Documentation**: Swagger/OpenAPI
-- **Build Tool**: npm/yarn
+- **Framework**: Spring Boot 3.x (Java 21)
+- **Database**: MongoDB (database: `payment`, requires replica set for transactions)
+- **Cache**: Caffeine (local, 5s TTL) + Redis (distributed, 60s TTL)
+- **Messaging**: RabbitMQ AMQP (topic exchange: `payment.events`)
+- **Payment**: Stripe Java SDK
+- **Auth**: Keycloak OAuth2 Resource Server
 
-## Port Configuration
+## Port & Context Path
 
-- **Service Port**: `8087`
-- **Base URL**: `http://localhost:8087`
-- **Context Path**: `/payment`
+- Port: `8087`
+- Context path: `/payment`
+- Health: `GET /payment/actuator/health`
+- API docs: `GET /payment/api-docs`
 
-## Credit System
+## API Endpoints
 
-### Credit Types
+### Credits
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/credits/balance` | Get current user balance |
+| GET | `/api/v1/credits/history` | Get transaction history (paginated) |
+| POST | `/api/v1/credits/consume` | Consume credits (service-to-service) |
 
-| Credit Type    | Description             | Usage                                 |
-| -------------- | ----------------------- | ------------------------------------- |
-| AI_CREDIT      | AI feature credits      | Roadmap generation, summaries, Q&A    |
-| STORAGE_CREDIT | Storage space credits   | File uploads, avatar storage          |
-| PREMIUM_CREDIT | Premium feature credits | Advanced learning, unlimited roadmaps |
+### Subscriptions
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/subscriptions/plans` | List all plans |
+| GET | `/api/v1/subscriptions/current` | Get current subscription |
+| POST | `/api/v1/subscriptions/subscribe` | Create subscription checkout |
+| PUT | `/api/v1/subscriptions/change` | Change plan |
+| POST | `/api/v1/subscriptions/cancel` | Cancel subscription |
 
-### Credit Packages
-
-| Package    | Credits | Price (USD) | Bonus     |
-| ---------- | ------- | ----------- | --------- |
-| Starter    | 100     | $4.99       | -         |
-| Basic      | 500     | $19.99      | 10% bonus |
-| Pro        | 1,500   | $49.99      | 20% bonus |
-| Enterprise | 5,000   | $149.99     | 30% bonus |
-
-### Feature Credit Costs
-
-| Feature                | Credits Required |
-| ---------------------- | ---------------- |
-| AI Roadmap Generation  | 10 credits       |
-| Node Summary           | 2 credits        |
-| Quiz Generation        | 5 credits        |
-| Q&A Chat (per session) | 3 credits        |
-| Storage (per 100MB)    | 5 credits        |
+### Payments & Webhooks
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/v1/payments/history` | Get payment history (paginated) |
+| POST | `/webhooks/stripe` | Stripe webhook endpoint (no auth required) |
 
 ## Subscription Plans
 
-### Free Tier
+| Plan | Monthly Credits | Storage | AI Generations | Price |
+|------|----------------|---------|----------------|-------|
+| FREE | 50 | 1 GB | 5 | $0 |
+| PRO | 500 | 20 GB | 100 | $9.99/mo |
+| ENTERPRISE | 2000 | 100 GB | 500 | $29.99/mo |
 
-- 50 credits/month
-- 100MB storage
-- 3 AI generations/month
-- Basic roadmap features
-
-### Pro Tier ($9.99/month)
-
-- 500 credits/month
-- 1GB storage
-- 50 AI generations/month
-- Priority support
-- Advanced analytics
-
-### Enterprise Tier ($29.99/month)
-
-- 2,000 credits/month
-- 10GB storage
-- Unlimited AI generations
-- Custom integrations
-- Dedicated support
-
-## Security & Authentication
-
-### Keycloak Integration
-
-The Payment Service integrates with Keycloak for OAuth2/JWT-based authentication. All API endpoints (except webhooks) require a valid JWT token issued by Keycloak.
-
-### Authentication Flow
-
-```
-User → Keycloak (Login) → JWT Token → Payment Service → Validate via JWK Set
-```
-
-### Token Sources
-
-| Method               | Header/Cookie                   | Priority        |
-| -------------------- | ------------------------------- | --------------- |
-| Authorization Header | `Authorization: Bearer {token}` | 1 (Primary)     |
-| Bear Header          | `Bear: {token}`                 | 2 (Testing)     |
-| Cookie               | `token={token}`                 | 3 (Web clients) |
-
-### Role-Based Access Control
-
-| Role           | Permissions                                             |
-| -------------- | ------------------------------------------------------- |
-| `ROLE_USER`    | View balance, purchase credits, manage own subscription |
-| `ROLE_PREMIUM` | All user permissions + premium features                 |
-| `ROLE_ADMIN`   | All permissions + manage all accounts, refunds          |
-
-### Keycloak Configuration
-
-Required environment variables:
-
-```bash
-KEYCLOAK_ISSUER_URI=http://localhost:8080/realms/memap
-KEYCLOAK_JWK_SET_URI=http://localhost:8080/realms/memap/protocol/openid-connect/certs
-KEYCLOAK_CLIENT_ID=payment-service
-KEYCLOAK_CLIENT_SECRET=your-client-secret
-```
-
-## Stripe Integration
-
-### Supported Payment Methods
-
-- Credit/Debit Cards (Visa, MasterCard, Amex)
-- Digital Wallets (Apple Pay, Google Pay)
-- Bank Transfers (SEPA, ACH)
-
-### Webhook Events
-
-| Event                           | Description               |
-| ------------------------------- | ------------------------- |
-| `checkout.session.completed`    | Payment successful        |
-| `payment_intent.succeeded`      | Credit purchase confirmed |
-| `customer.subscription.created` | Subscription started      |
-| `customer.subscription.updated` | Plan changed              |
-| `customer.subscription.deleted` | Subscription cancelled    |
-| `invoice.payment_failed`        | Payment failure           |
-
-## Database Schema
-
-### Core Tables
-
-> **Note**: All tables implement soft delete using `deleted_at` timestamp and `is_active` flag. Records with `deleted_at IS NOT NULL` or `is_active = false` are considered inactive and excluded from normal queries.
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    credit_accounts                          │
-├─────────────────────────────────────────────────────────────┤
-│ id (PK)         │ UUID                                      │
-│ user_id         │ VARCHAR(255) - External user reference    │
-│ balance         │ INTEGER - Current credit balance          │
-│ lifetime_earned │ INTEGER - Total credits ever earned       │
-│ lifetime_spent  │ INTEGER - Total credits ever spent        │
-│ is_active       │ BOOLEAN DEFAULT true - Active status      │
-│ created_at      │ TIMESTAMP                                 │
-│ updated_at      │ TIMESTAMP                                 │
-│ deleted_at      │ TIMESTAMP NULL - Soft delete marker       │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│                    credit_transactions                       │
-├─────────────────────────────────────────────────────────────┤
-│ id (PK)         │ UUID                                      │
-│ account_id (FK) │ UUID - Reference to credit_accounts       │
-│ type            │ ENUM (PURCHASE, USAGE, REFUND, BONUS)     │
-│ amount          │ INTEGER - Positive for credit, negative   │
-│ feature_type    │ VARCHAR - AI_GENERATION, STORAGE, etc.    │
-│ description     │ TEXT - Transaction description            │
-│ reference_id    │ VARCHAR - External reference (Stripe ID)  │
-│ is_active       │ BOOLEAN DEFAULT true - Active status      │
-│ created_at      │ TIMESTAMP                                 │
-│ deleted_at      │ TIMESTAMP NULL - Soft delete marker       │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│                    subscriptions                             │
-├─────────────────────────────────────────────────────────────┤
-│ id (PK)             │ UUID                                  │
-│ user_id             │ VARCHAR(255)                          │
-│ stripe_customer_id  │ VARCHAR(255)                          │
-│ stripe_subscription │ VARCHAR(255)                          │
-│ plan_type           │ ENUM (FREE, PRO, ENTERPRISE)          │
-│ status              │ ENUM (ACTIVE, CANCELLED, PAST_DUE)    │
-│ current_period_start│ TIMESTAMP                             │
-│ current_period_end  │ TIMESTAMP                             │
-│ is_active           │ BOOLEAN DEFAULT true - Active status  │
-│ created_at          │ TIMESTAMP                             │
-│ updated_at          │ TIMESTAMP                             │
-│ deleted_at          │ TIMESTAMP NULL - Soft delete marker   │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│                    payment_history                           │
-├─────────────────────────────────────────────────────────────┤
-│ id (PK)             │ UUID                                  │
-│ user_id             │ VARCHAR(255)                          │
-│ stripe_payment_id   │ VARCHAR(255)                          │
-│ amount              │ DECIMAL(10,2)                         │
-│ currency            │ VARCHAR(3)                            │
-│ status              │ ENUM (PENDING, COMPLETED, FAILED)     │
-│ payment_method      │ VARCHAR(50)                           │
-│ description         │ TEXT                                  │
-│ is_active           │ BOOLEAN DEFAULT true - Active status  │
-│ created_at          │ TIMESTAMP                             │
-│ deleted_at          │ TIMESTAMP NULL - Soft delete marker   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Soft Delete Pattern
-
-```typescript
-// TypeORM Entity Example
-@Entity('credit_accounts')
-export class CreditAccount {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
-  userId: string;
-
-  @Column({ default: 0 })
-  balance: number;
-
-  @Column({ default: true })
-  isActive: boolean; // Active status flag
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
-
-  @DeleteDateColumn()
-  deletedAt?: Date; // Soft delete column
-}
-
-// Repository usage
-await creditAccountRepo.softDelete(id); // Soft delete
-await creditAccountRepo.restore(id); // Restore deleted record
-await creditAccountRepo.find(); // Excludes soft-deleted
-await creditAccountRepo.findWithDeleted(); // Includes soft-deleted
-```
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-- PostgreSQL 15+
-- Stripe account with API keys
-- Keycloak server (for authentication)
-
-### Environment Variables
+## Environment Variables
 
 ```env
-# Server
-PORT=8087
-NODE_ENV=development
-
-# Database
-DATABASE_URL=postgresql://postgres:password@localhost:5432/payment_db
-
-# Stripe
-STRIPE_SECRET_KEY=sk_test_xxx
-STRIPE_PUBLISHABLE_KEY=pk_test_xxx
-STRIPE_WEBHOOK_SECRET=whsec_xxx
-
-# Service URLs
-IDENTITY_SERVICE_URL=http://localhost:8081
-PROFILE_SERVICE_URL=http://localhost:8082
-
-# Keycloak Configuration
+MONGO_URI=mongodb://localhost:27017/payment?replicaSet=rs0
+REDIS_HOST=localhost
+REDIS_PORT=6379
+RABBITMQ_HOST=localhost
+RABBITMQ_PORT=5672
+RABBITMQ_USERNAME=admin
+RABBITMQ_PASSWORD=admin
 KEYCLOAK_ISSUER_URI=http://localhost:8080/realms/memap
 KEYCLOAK_JWK_SET_URI=http://localhost:8080/realms/memap/protocol/openid-connect/certs
-KEYCLOAK_CLIENT_ID=payment-service
-KEYCLOAK_CLIENT_SECRET=your-client-secret
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
-### Running the Service
+## Run Locally
 
 ```bash
-# Navigate to service directory
-cd payment-service
-
-# Install dependencies
-npm install
-
-# Run database migrations
-npm run migration:run
-
-# Start development server
-npm run start:dev
-
-# Start production server
-npm run start:prod
+cp .env.example .env
+# Fill in .env values — MongoDB must run as replica set
+./mvnw spring-boot:run
 ```
 
-### Testing Stripe Integration
+## Test
 
-Use Stripe's test card numbers:
+```bash
+./mvnw test
+```
 
-- **Success**: `4242 4242 4242 4242`
-- **Requires Auth**: `4000 0025 0000 3155`
-- **Declined**: `4000 0000 0000 9995`
+## MongoDB Collections
 
-## Related Services
+| Collection | Description |
+|------------|-------------|
+| `tbl_credit_accounts` | Per-user credit balance |
+| `tbl_credit_transactions` | Ledger entries |
+| `tbl_subscriptions` | User subscriptions |
+| `tbl_payment_history` | Stripe payment records |
+| `tbl_stripe_customers` | userId → Stripe customerId mapping |
+| `tbl_processed_stripe_events` | Webhook idempotency store (30d TTL) |
 
-- **Identity Service**: User authentication and token validation
-- **Profile Service**: User profile and quota information
-- **Roadmap AI Service**: AI credit consumption tracking
-- **File Service**: Storage credit management
-- **Learning Service**: Premium feature access
+## Error Codes (7xxx)
 
-## Documentation
-
-- **[API Documentation](./API.md)** - Complete API reference with examples
-- **[Architecture](./ARCHITECTURE.md)** - System design and patterns
-
-## Error Handling
-
-See [ERROR_CODES.md](../ERROR_CODES.md) for payment-specific error codes (7xxx range).
+| Code | Description | HTTP Status |
+|------|-------------|-------------|
+| 7000 | Credit account not found | 404 |
+| 7001 | Insufficient credits | 402 |
+| 7002 | Duplicate transaction | 409 |
+| 7011 | Invalid plan | 400 |
+| 7012 | Already subscribed | 409 |
+| 7013 | No active subscription | 404 |
+| 7050 | Invalid Stripe webhook signature | 400 |
+| 7099 | Feature pending | 501 |

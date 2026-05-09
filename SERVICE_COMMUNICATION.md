@@ -128,7 +128,22 @@ This is a **direct HTTP call** from profile-service to notification-serice's int
 
 ---
 
-## 8. WebSocket — Frontend → hocuspocus-server
+## 8. RabbitMQ — payment-service → downstream consumers
+
+**Exchange:** `payment.events` (topic)
+
+| Routing Key | Event | Published when |
+|---|---|---|
+| `credit.granted` | Credits added to a user | Webhook confirm or AddCredits call |
+| `credit.consumed` | Credits deducted | Successful ConsumeCredits |
+| `subscription.created` | New paid subscription | Stripe subscription.created webhook (stub) |
+| `subscription.cancelled` | Subscription cancelled | Stripe subscription.deleted webhook (stub) |
+
+**Subscribers:** None yet — notification-serice and other services will subscribe in follow-up changes.
+
+---
+
+## 9. WebSocket — Frontend → hocuspocus-server
 
 **Protocol:** WebSocket + Yjs (CRDT) via `@hocuspocus/provider` on the frontend  
 **Server:** `hocuspocus-server` port 1234

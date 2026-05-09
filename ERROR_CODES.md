@@ -117,30 +117,17 @@ MeMap uses standardized error codes across all microservices for consistent erro
 
 | Code | Name                      | Message                               | HTTP Status |
 | ---- | ------------------------- | ------------------------------------- | ----------- |
-| 7001 | AUTHENTICATION_REQUIRED   | Authentication required               | 401         |
-| 7002 | ACCESS_DENIED             | Access denied                         | 403         |
-| 7010 | INSUFFICIENT_CREDITS      | Insufficient credits                  | 402         |
-| 7011 | INVALID_PACKAGE_ID        | Invalid package ID                    | 400         |
-| 7012 | INVALID_PLAN_ID           | Invalid plan ID                       | 400         |
-| 7013 | CREDIT_ACCOUNT_NOT_FOUND  | Credit account not found              | 404         |
-| 7020 | PAYMENT_FAILED            | Payment failed                        | 400         |
-| 7021 | INVALID_PAYMENT_METHOD    | Invalid payment method                | 400         |
-| 7022 | CARD_DECLINED             | Card declined                         | 400         |
-| 7023 | PAYMENT_CANCELLED         | Payment cancelled                     | 400         |
-| 7024 | REFUND_FAILED             | Refund failed                         | 400         |
-| 7030 | SUBSCRIPTION_NOT_FOUND    | Subscription not found                | 404         |
-| 7031 | ALREADY_SUBSCRIBED        | Already subscribed to this plan       | 400         |
-| 7032 | CANNOT_DOWNGRADE_TRIAL    | Cannot downgrade during trial period  | 400         |
-| 7033 | SUBSCRIPTION_CANCELLED    | Subscription has been cancelled       | 400         |
-| 7034 | SUBSCRIPTION_PAST_DUE     | Subscription payment is past due      | 400         |
-| 7040 | INVALID_WEBHOOK_SIGNATURE | Invalid Stripe webhook signature      | 400         |
-| 7041 | WEBHOOK_PROCESSING_FAILED | Failed to process webhook event       | 500         |
-| 7050 | STORAGE_LIMIT_EXCEEDED    | Storage limit exceeded                | 400         |
-| 7051 | AI_LIMIT_EXCEEDED         | AI generation limit exceeded          | 400         |
-| 7052 | FEATURE_NOT_AVAILABLE     | Feature not available on current plan | 403         |
-| 7060 | STRIPE_CUSTOMER_NOT_FOUND | Stripe customer not found             | 404         |
-| 7061 | STRIPE_API_ERROR          | Stripe API error                      | 500         |
-| 7099 | PAYMENT_SERVICE_ERROR     | Payment service error                 | 500         |
+| 7000 | CREDIT_ACCOUNT_NOT_FOUND  | Credit account not found              | 404         |
+| 7001 | INSUFFICIENT_CREDITS      | Insufficient credits                  | 402         |
+| 7002 | DUPLICATE_TRANSACTION     | Transaction already processed         | 409         |
+| 7011 | INVALID_PLAN              | Invalid plan                          | 400         |
+| 7012 | ALREADY_SUBSCRIBED        | Already subscribed to this plan       | 409         |
+| 7013 | NO_ACTIVE_SUBSCRIPTION    | No active subscription                | 404         |
+| 7014 | SUBSCRIPTION_NOT_FOUND    | Subscription not found                | 404         |
+| 7050 | STRIPE_SIGNATURE_INVALID  | Invalid Stripe webhook signature      | 400         |
+| 7051 | STRIPE_API_ERROR          | Stripe API error                      | 502         |
+| 7052 | STRIPE_CUSTOMER_NOT_FOUND | Stripe customer mapping not found     | 404         |
+| 7099 | FEATURE_PENDING           | This feature is not yet available     | 501         |
 
 ---
 

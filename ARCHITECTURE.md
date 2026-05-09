@@ -14,12 +14,13 @@
 | roadmap-service | 8083 (REST) + 9083 (gRPC) | Spring Boot 3.x, MongoDB | MongoDB + Redis (Caffeine dual-layer) |
 | roadmap-ai-service | 8085 | Spring Boot 3.x, Spring AI, pgvector | PostgreSQL (pgvector) + Redis |
 | notification-serice | 8091 | Spring Boot 3.x, MongoDB | MongoDB + Redis |
+| payment-service | 8087 | Spring Boot 3.x, MongoDB | MongoDB + Redis + RabbitMQ |
 | storage-service | 8088 | Spring Boot 3.x | MinIO (object storage) |
 | hocuspocus-server | 1234 | Node.js + TypeScript | MongoDB + Redis |
 | memap-frontend | 5173 (dev) | React 19 + Vite + TypeScript | — |
 | memap-admin-frontend | 4000 | Next.js 16 + Ant Design | — |
 
-> **Note:** `identity-service`, `payment-service`, and `learning-service` directories under `docs/` are outdated — those services have been removed or merged. The active learning module now lives inside `roadmap-service`. The directory `notification-serice` has a typo in its name — do not rename without updating docker-compose and all build configs.
+> **Note:** The directory `notification-serice` has a typo in its name — do not rename without updating docker-compose and all build configs.
 
 ---
 

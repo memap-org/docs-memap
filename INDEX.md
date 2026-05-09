@@ -1,244 +1,181 @@
 # MeMap Platform Documentation Index
 
-Welcome to the MeMap platform documentation! This index helps you navigate to the right documentation for each service.
-
-## 📚 Documentation Structure
-
-```
-docs/
-├── README.md                    # Main documentation (you are here)
-├── API.md                       # API overview with links to service APIs
-├── ARCHITECTURE.md              # System architecture overview
-├── DEPLOYMENT.md                # Deployment guides
-├── ERROR_CODES.md               # Error code reference
-├── GETTING_STARTED.md           # Quick start guide
-│
-├── identity-service/            # Authentication & Authorization Service
-│   ├── README.md                # Service overview
-│   ├── API.md                   # API endpoints & examples
-│   └── ARCHITECTURE.md          # Service architecture
-│
-├── profile-service/             # User Profile Management Service
-│   ├── README.md                # Service overview
-│   ├── API.md                   # API endpoints & examples
-│   └── ARCHITECTURE.md          # Service architecture
-│
-├── roadmap-service/             # Roadmap Management Service
-│   ├── README.md                # Service overview
-│   ├── API.md                   # API endpoints & examples
-│   └── ARCHITECTURE.md          # Service architecture
-│
-├── roadmap-ai-service/          # AI-Powered Features Service
-│   ├── README.md                # Service overview
-│   ├── API.md                   # API endpoints & examples
-│   └── ARCHITECTURE.md          # Service architecture
-│
-├── file-service/                # File Storage Service
-├── storage-service/             # Storage Service
-│   ├── README.md                # Service overview
-│   ├── API.md                   # API endpoints & examples
-│   └── ARCHITECTURE.md          # Service architecture
-│
-├── learning-service/            # Learning & Quiz Management Service
-│   ├── README.md                # Service overview
-│   ├── API.md                   # API endpoints & examples
-│   └── ARCHITECTURE.md          # Service architecture
-│
-├── payment-service/             # Payment & Credit Management Service
-│   ├── README.md                # Service overview
-│   ├── API.md                   # API endpoints & examples
-│   └── ARCHITECTURE.md          # Service architecture
-│
-└── memap-frontend/              # React Frontend Application
-    ├── README.md                # Application overview
-    ├── API.md                   # Frontend API integration
-    └── ARCHITECTURE.md          # Frontend architecture
-```
-
-## 🚀 Quick Start Guides
-
-| Document                  | Description                             | Link                                                   |
-| ------------------------- | --------------------------------------- | ------------------------------------------------------ |
-| **Getting Started**       | Set up the entire platform              | [GETTING_STARTED.md](./GETTING_STARTED.md)             |
-| **Deployment Guide**      | Deploy to production                    | [DEPLOYMENT.md](./DEPLOYMENT.md)                       |
-| **System Architecture**   | Understand the system design            | [ARCHITECTURE.md](./ARCHITECTURE.md)                   |
-| **API Overview**          | Browse all service APIs                 | [API.md](./API.md)                                     |
-| **Service Communication** | gRPC, WebSocket, WebRTC migration guide | [SERVICE_COMMUNICATION.md](./SERVICE_COMMUNICATION.md) |
-
-## 🔧 Backend Services
-
-### Identity Service (Port 8081)
-
-Authentication and authorization service managing JWT tokens, user credentials, and OAuth2 integration.
-
-- **[README](./identity-service/README.md)** - Overview, features, getting started
-- **[API Documentation](./identity-service/API.md)** - Login, logout, token management
-- **[Architecture](./identity-service/ARCHITECTURE.md)** - Design, security, patterns
-
-### Profile Service (Port 8082)
-
-User profile management with avatar uploads, password management, and user search.
-
-- **[README](./profile-service/README.md)** - Overview, features, getting started
-- **[API Documentation](./profile-service/API.md)** - Registration, profile updates, avatar uploads
-- **[Architecture](./profile-service/ARCHITECTURE.md)** - Caching, messaging, integrations
-
-### Roadmap Service (Port 8083)
-
-Roadmap creation and management with nodes, edges, permissions, and progress tracking.
-
-- **[README](./roadmap-service/README.md)** - Overview, features, getting started
-- **[API Documentation](./roadmap-service/API.md)** - CRUD operations, nodes, edges, sharing
-- **[Architecture](./roadmap-service/ARCHITECTURE.md)** - Data models, permissions, caching
-
-### Roadmap AI Service (Port 8084)
-
-AI-powered roadmap generation, node summaries, quiz generation, and Q&A chat.
-
-- **[README](./roadmap-ai-service/README.md)** - Overview, AI features, getting started
-- **[API Documentation](./roadmap-ai-service/API.md)** - Generation, summaries, chat
-- **[Architecture](./roadmap-ai-service/ARCHITECTURE.md)** - RAG, LLM integration, vector store
-
-### File Service (Port 8085)
-
-File upload, download, and storage using MinIO object storage.
-
-- **[README](./file-service/README.md)** - Overview, features, getting started
-- **[API Documentation](./file-service/API.md)** - Upload, download, presigned URLs
-- **[Architecture](./file-service/ARCHITECTURE.md)** - MinIO integration, metadata storage
-
-### Storage Service (Port 8088)
-
-Storage service foundation (setup only). APIs will be added in a follow-up change.
-
-- **[README](./storage-service/README.md)** - Overview, setup, configuration
-- **[API Documentation](./storage-service/API.md)** - Placeholder (no endpoints yet)
-- **[Architecture](./storage-service/ARCHITECTURE.md)** - Package layout and configuration
-
-### Learning Service (Port 8086)
-
-Quiz and learning management system (Work in Progress).
-
-- **[README](./learning-service/README.md)** - Overview, features, getting started
-- **[API Documentation](./learning-service/API.md)** - Quiz CRUD, questions, visibility
-- **[Architecture](./learning-service/ARCHITECTURE.md)** - Data models, security
-
-### Payment Service (Port 8087)
-
-Payment processing and credit management with Stripe integration.
-
-- **[README](./payment-service/README.md)** - Overview, credit system, pricing
-- **[API Documentation](./payment-service/API.md)** - Credits, subscriptions, payments
-- **[Architecture](./payment-service/ARCHITECTURE.md)** - Stripe integration, NestJS patterns
-
-## 🎨 Frontend Application
-
-### MeMap Frontend (Port 5173)
-
-React + TypeScript web application with Redux state management and protected routes.
-
-- **[README](./memap-frontend/README.md)** - Overview, features, getting started
-- **[API Integration](./memap-frontend/API.md)** - RTK Query, authentication flow
-- **[Architecture](./memap-frontend/ARCHITECTURE.md)** - Components, routing, state management
-
-## 📖 Reference Documentation
-
-### Error Codes
-
-Complete reference of error codes across all services.
-
-- **[ERROR_CODES.md](./ERROR_CODES.md)**
-
-### Deployment
-
-Production deployment guides for Docker, Kubernetes, and cloud platforms.
-
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)**
-
-## 🔍 Quick Search
-
-### By Technology
-
-- **Spring Boot**: Identity, Profile, Roadmap, File, Learning, AI services
-- **NestJS**: Payment service
-- **MySQL**: Identity, Profile, Roadmap, File, Learning services
-- **PostgreSQL**: Payment service
-- **MongoDB**: Roadmap AI service (vectors, chat history)
-- **Redis**: Profile, Roadmap services (caching)
-- **RabbitMQ**: Profile, Roadmap services (messaging)
-- **MinIO**: File service (object storage)
-- **Stripe**: Payment service (payment processing)
-- **React**: Frontend application
-- **AI/LLM**: Roadmap AI service
-- **gRPC**: Service-to-service communication (planned)
-- **WebSocket**: Real-time client communication (planned)
-- **WebRTC**: Peer-to-peer media streaming (planned)
-
-### By Feature
-
-- **Authentication**: [Identity Service](./identity-service/)
-- **User Management**: [Profile Service](./profile-service/)
-- **Roadmap Creation**: [Roadmap Service](./roadmap-service/)
-- **AI Generation**: [Roadmap AI Service](./roadmap-ai-service/)
-- **File Upload**: [File Service](./file-service/)
-- **Storage Foundation**: [Storage Service](./storage-service/)
-- **Quiz Management**: [Learning Service](./learning-service/)
-- **Payments & Credits**: [Payment Service](./payment-service/)
-- **Web Interface**: [Frontend](./memap-frontend/)
-
-## 🛠️ Development Workflow
-
-1. **Start with** [GETTING_STARTED.md](./GETTING_STARTED.md) to set up your environment
-2. **Review** [ARCHITECTURE.md](./ARCHITECTURE.md) to understand the system
-3. **Explore** service-specific documentation for the service you're working on
-4. **Reference** [API.md](./API.md) for endpoint details
-5. **Check** [ERROR_CODES.md](./ERROR_CODES.md) when troubleshooting
-
-## 📝 Documentation Conventions
-
-Each service documentation follows this structure:
-
-### README.md
-
-- Service overview and purpose
-- Key features
-- Technology stack
-- Port and URL configuration
-- Getting started guide
-- Related services
-
-### API.md
-
-- Base URLs
-- Authentication requirements
-- All endpoints with examples
-- Request/response formats
-- Error responses
-- Data models
-
-### ARCHITECTURE.md
-
-- Architecture diagrams
-- Component details
-- Data models
-- Design patterns
-- Security considerations
-- Performance optimizations
-
-## 🔄 Last Updated
-
-**January 29, 2026**
-
-This documentation structure was created to provide comprehensive, service-specific documentation based on the current codebase implementation.
-
-## 📞 Support
-
-For questions or issues with the documentation:
-
-- Review the service-specific docs first
-- Check the troubleshooting sections
-- Contact the development team
+> **Branch:** `main` | **Last updated:** 2026-05-08
+> This index reflects the **currently active** services. Docs for `identity-service`, `learning-service`, `payment-service`, and `file-service` are outdated — those services have been removed or merged.
 
 ---
 
-**Navigation**: [Main README](./README.md) | [API Overview](./API.md) | [Architecture](./ARCHITECTURE.md)
+## Documentation Structure
+
+```
+docs/
+├── INDEX.md                     # This file
+├── API.md                       # API overview with gateway routes
+├── ARCHITECTURE.md              # System architecture (updated)
+├── DEPLOYMENT.md                # Deployment guides
+├── ERROR_CODES.md               # Error code reference
+├── GETTING_STARTED.md           # Quick start guide
+├── SERVICE_COMMUNICATION.md     # gRPC, AMQP, Redis Stream, SSE (updated)
+├── GRPC_TROUBLESHOOTING.md      # gRPC debugging guide
+├── REFRESH_TOKEN_WORKFLOW.md    # Keycloak token refresh flows
+│
+├── profile-service/             # User profiles, invitations, gRPC server
+│   ├── README.md
+│   ├── API.md                   # ✅ Updated with actual endpoints
+│   └── ARCHITECTURE.md
+│
+├── roadmap-service/             # Roadmaps + Learning (quizzes, assignments)
+│   ├── README.md
+│   ├── API.md                   # ✅ Updated — includes both roadmap + learning contexts
+│   ├── ARCHITECTURE.md
+│   ├── FEATURES.md
+│   └── DATABASE_SCHEMA.md
+│
+├── roadmap-ai-service/          # AI generation, RAG, chat, node summaries
+│   ├── README.md
+│   ├── API.md                   # ✅ Updated with actual endpoints
+│   ├── ARCHITECTURE.md
+│   └── FEATURES.md
+│
+├── notification-service/        # Notifications, SSE real-time delivery
+│   ├── README.md
+│   ├── API.md                   # ✅ Updated — SSE not STOMP, Redis Stream inbound
+│   └── ARCHITECTURE.md
+│
+├── storage-service/             # File upload/download, MinIO
+│   ├── README.md
+│   ├── API.md                   # ✅ Updated with actual endpoints
+│   └── ARCHITECTURE.md
+│
+├── hocuspocus-server/           # Real-time collaborative editing (Yjs/WebSocket)
+│   ├── README.md
+│   └── ARCHITECTURE.md
+│
+├── memap-frontend/              # React 19 + Vite SPA
+│   ├── README.md
+│   ├── API.md
+│   └── ARCHITECTURE.md
+│
+├── api-gateway/                 # Spring Cloud Gateway routing docs
+│
+└── [OUTDATED — do not use]
+    ├── identity-service/        # Removed — auth is now Keycloak-only
+    ├── learning-service/        # Merged into roadmap-service
+    ├── payment-service/         # Removed
+    └── file-service/            # Merged into storage-service
+```
+
+---
+
+## Active Backend Services
+
+### API Gateway (port 8090)
+Routes all external traffic. JWT validation at the edge. Swagger aggregation at `/swagger-ui.html`.
+
+### Profile Service (port 8082)
+
+User registration, profile management, invitation flow, password management, gRPC server for profile lookups.
+
+- [API Documentation](./profile-service/API.md) — Registration, invitations, avatar, gRPC contract
+- [Architecture](./profile-service/ARCHITECTURE.md)
+
+### Roadmap Service (port 8083 + gRPC 9083)
+
+Two bounded contexts in one deployable:
+- **Roadmap context** — CRUD, permissions, reactions, comments, notes, focus/progress tracking, categories
+- **Learning context** — Quizzes, questions, quiz attempts (student + teacher), assignments, grading
+
+- [API Documentation](./roadmap-service/API.md) — All endpoints for both contexts
+- [Architecture](./roadmap-service/ARCHITECTURE.md)
+
+### Roadmap AI Service (port 8085)
+
+Roadmap generation via LLM, node summaries, RAG-powered Q&A chat, async node ingestion into pgvector.
+
+- [API Documentation](./roadmap-ai-service/API.md) — Generate, summarize, chat, gRPC/AMQP details
+- [Architecture](./roadmap-ai-service/ARCHITECTURE.md)
+
+### Notification Service (port 8091)
+
+Notification CRUD + real-time SSE delivery. Consumes from Redis Stream (ai-service) and HTTP internal endpoint (profile-service).
+
+- [API Documentation](./notification-service/API.md) — REST endpoints + SSE stream + Redis Stream schema
+- [Architecture](./notification-service/ARCHITECTURE.md)
+
+### Storage Service (port 8088)
+
+File upload/download/access via MinIO. Public access endpoint for inline image/PDF viewing.
+
+- [API Documentation](./storage-service/API.md) — Upload, download, access, quota management
+- [Architecture](./storage-service/ARCHITECTURE.md)
+
+### Hocuspocus Server (port 1234)
+
+WebSocket server for Yjs CRDT collaborative editing of roadmap documents. Loads state from MongoDB, syncs via Redis.
+
+- [Architecture](./hocuspocus-server/ARCHITECTURE.md)
+- [README](./hocuspocus-server/README.md)
+
+---
+
+## Frontend Applications
+
+### memap-frontend (port 5173 dev)
+
+React 19 + Vite + TypeScript. Feature-slice architecture. Redux Toolkit state. TipTap rich text with Yjs collaboration.
+
+- [Architecture](./memap-frontend/ARCHITECTURE.md)
+
+### memap-admin-frontend (port 4000)
+
+Next.js 16 App Router + Ant Design 6 + Tailwind CSS 4. Admin panel for managing roadmaps, users, quizzes.
+
+---
+
+## Cross-Cutting References
+
+| Document | Description |
+|---|---|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Full system diagram, data stores, communication matrix |
+| [SERVICE_COMMUNICATION.md](./SERVICE_COMMUNICATION.md) | gRPC contracts, AMQP schemas, Redis Stream format, SSE |
+| [ERROR_CODES.md](./ERROR_CODES.md) | Error code ranges across all services |
+| [GRPC_TROUBLESHOOTING.md](./GRPC_TROUBLESHOOTING.md) | Debugging gRPC between profile ↔ roadmap ↔ ai-service |
+| [REFRESH_TOKEN_WORKFLOW.md](./REFRESH_TOKEN_WORKFLOW.md) | Keycloak token lifecycle and refresh flows |
+| [GETTING_STARTED.md](./GETTING_STARTED.md) | Local dev setup with Docker Compose |
+
+---
+
+## By Feature
+
+| Feature | Service |
+|---|---|
+| User registration / login | profile-service + Keycloak |
+| Invitations | profile-service |
+| Roadmap CRUD | roadmap-service (roadmap context) |
+| Roadmap collaboration (real-time) | hocuspocus-server + memap-frontend |
+| Roadmap permissions (teacher/student) | roadmap-service → profile-service (gRPC) |
+| Progress / focus tracking | roadmap-service |
+| AI roadmap generation | roadmap-ai-service → roadmap-service |
+| Node RAG search / Q&A | roadmap-ai-service (pgvector) |
+| Quizzes and assignments | roadmap-service (learning context) |
+| Real-time notifications | notification-serice (SSE) |
+| File uploads | storage-service |
+
+## By Technology
+
+| Technology | Used by |
+|---|---|
+| Spring Boot 3.x | All Java services |
+| MySQL | profile-service |
+| MongoDB | roadmap-service, notification-serice, hocuspocus-server |
+| PostgreSQL + pgvector | roadmap-ai-service |
+| Redis | All Java services + hocuspocus-server |
+| RabbitMQ | roadmap-service → ai-service (node ingest) |
+| MinIO | storage-service |
+| gRPC | roadmap-service ↔ profile-service, ai-service ↔ roadmap-service |
+| Redis Stream | ai-service → notification-serice |
+| SSE | notification-serice → memap-frontend |
+| WebSocket (Yjs) | memap-frontend ↔ hocuspocus-server |
+| Keycloak | Auth for all services |
+| React 19 + Vite | memap-frontend |
+| Next.js 16 | memap-admin-frontend |

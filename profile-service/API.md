@@ -1,25 +1,109 @@
 # Profile Service API Documentation
 
-## Base URL
-
-```
-http://localhost:8082/profile
-```
-
-## Authentication
-
-All endpoints require JWT authentication (stored in HTTP-only cookies) except for registration.
+> **Branch:** `main` | **Port:** 8082 | **Context path:** `/profile`
 
 ---
 
-## Endpoints
+## Base URLs
 
-### User Registration and Profile Management
+```
+Via API Gateway:  http://localhost:8090/profile/...
+Direct:           http://localhost:8082/profile/...
+Swagger UI:       http://localhost:8082/profile/swagger-ui.html
+```
 
-#### Register User
+---
+
+## Authentication
+
+All endpoints require a valid Keycloak JWT (passed as Bearer token or HTTP-only cookie) **except** `/users/register` and invitation validation/acceptance endpoints.
+
+---
+
+## REST Endpoints
+
+### User Management — `UserController`
+
+Base: `/users`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/users/register` | Public | Register a new user (creates Keycloak identity + profile) |
+| GET | `/users/my-profile` | JWT | Get the current user's profile |
+| PUT | `/users` | JWT | Update current user profile |
+| PATCH | `/users/remove/{id}` | JWT | Soft-remove a user |
+| POST | `/users/change-password` | JWT | Change password (calls Keycloak via Feign; evicts Redis token cache) |
+| POST | `/users/forgot-password` | Public | Trigger forgot-password email flow |
+| POST | `/users/update-avatar` | JWT | Upload and set avatar (`multipart/form-data`) |
+| GET | `/users` | JWT | Search users by email/userId (paginated) |
+| POST | `/users/bulk` | JWT | Get user info by list of IDs |
+
+**Key flows (GitNexus):**
+- `register` → provisions user in Keycloak via `TokenExchangeService.createUser()` → client token exchanged/cached in Redis
+- `changePassword` → validates old password via Keycloak token exchange → updates → evicts Redis token cache
+- `updateAvatar` → syncs current user from JWT token, resolves email, uploads avatar file
+
+**Search query params for `GET /users`:**
+```
+email: string (partial match)
+userId: string
+page: int (0-based)
+size: int (default 10)
+```
+
+### Invitation Management — `InvitationController`
+
+Base: `/invitations`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/invitations` | JWT | Create an invitation (sends email to invitee) |
+| GET | `/invitations` | JWT | List invitations sent by current user (paginated) |
+| PATCH | `/invitations/{id}/revoke` | JWT | Revoke a pending invitation |
+| POST | `/invitations/{id}/resend` | JWT | Resend invitation email |
+| GET | `/invitations/validate` | Public | Validate an invitation token (returns token info) |
+| POST | `/invitations/accept` | Public | Accept invitation with email+password |
+| POST | `/invitations/accept-oauth` | Public | Accept invitation via OAuth (Google SSO) |
+
+**Key flows (GitNexus):**
+- `createInvitation` → `provisionDisabledIdentity` in Keycloak → disabled user created → email sent
+- `acceptInvitation` → `enableInvitedIdentity` → `enableUser` + `updateUser` in Keycloak → token exchange
+- `acceptInvitationOAuth` → same enable flow but via OAuth credentials
+
+### Email — `EmailController`
+
+Base: `/email`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/email/test` | JWT | Test email send (triggers notification-serice via HTTP) |
+
+**Flow (GitNexus trace `SendEmail → Notification`):**
+`sendEmail` → `EmailService.sendHtmlEmail()` (Spring Mail) + `SendNotificationService.send()` in notification-serice
+
+---
+
+## gRPC Server (embedded port)
+
+Consumed by `roadmap-service`.
+
+**Proto:** `src/main/proto/profile/profile_lookup.proto`
+
+| RPC | Request | Response |
+|---|---|---|
+| `GetUserProfile` | `{user_id}` | `{user_id, display_name, email, avatar_url, found, role}` |
+| `GetUserProfiles` | `{user_ids: []}` | `map<user_id, {display_name, email, avatar_url, role}>` |
+
+Roles: `STUDENT`, `TEACHER`, `ADMIN`
+
+---
+
+## Request / Response Examples
+
+### Register User
 
 ```http
-POST /users/register
+POST /profile/users/register
 Content-Type: application/json
 
 {
@@ -34,425 +118,38 @@ Content-Type: application/json
 }
 ```
 
-**Response:**
-
 ```json
 {
-  "code": 0,
-  "message": null,
+  "code": 1000,
   "result": {
-    "userId": "uuid-here",
+    "userId": "keycloak-uuid",
     "username": "johndoe",
     "email": "john@example.com",
     "firstName": "John",
-    "lastName": "Doe",
-    "gender": "MALE",
-    "dateOfBirth": "1995-05-15",
-    "phoneNumber": "+1234567890",
-    "avatarUrl": null,
-    "createdAt": "2026-01-29T10:00:00Z"
+    "lastName": "Doe"
   }
 }
 ```
 
----
-
-#### Get My Profile
+### Create Invitation
 
 ```http
-GET /users/my-profile
-Authorization: Bearer {token}
-```
-
-**Roles Required**: `STUDENT`, `TEACHER`, `ADMIN`
-
-**Response:**
-
-```json
-{
-  "code": 0,
-  "message": null,
-  "result": {
-    "userId": "uuid-here",
-    "username": "johndoe",
-    "email": "john@example.com",
-    "firstName": "John",
-    "lastName": "Doe",
-    "gender": "MALE",
-    "dateOfBirth": "1995-05-15",
-    "phoneNumber": "+1234567890",
-    "avatarUrl": "http://localhost:8085/file/avatars/avatar-uuid.jpg",
-    "bio": "Learning enthusiast",
-    "createdAt": "2026-01-29T10:00:00Z",
-    "updatedAt": "2026-01-29T11:00:00Z"
-  }
-}
-```
-
----
-
-#### Update Profile
-
-```http
-PUT /users
+POST /profile/invitations
 Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "firstName": "John",
-  "lastName": "Doe Updated",
-  "phoneNumber": "+1234567890",
-  "dateOfBirth": "1995-05-15",
-  "bio": "Passionate learner and teacher",
-  "gender": "MALE"
-}
-```
-
-**Roles Required**: `STUDENT`, `TEACHER`, `ADMIN`
-
-**Response:**
-
-```json
-{
-  "code": 0,
-  "message": null,
-  "result": {
-    "userId": "uuid-here",
-    "username": "johndoe",
-    "firstName": "John",
-    "lastName": "Doe Updated",
-    "bio": "Passionate learner and teacher",
-    "updatedAt": "2026-01-29T12:00:00Z"
-  }
+  "email": "invitee@example.com",
+  "role": "STUDENT"
 }
 ```
 
 ---
 
-#### Remove User (Soft Delete)
-
-```http
-PATCH /users/remove/{userId}
-Authorization: Bearer {token}
-```
-
-**Response:**
-
-```json
-{
-  "code": 0,
-  "message": "Remove success",
-  "result": null
-}
-```
-
----
-
-### Password Management
-
-#### Change Password
-
-```http
-POST /users/change-password
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "oldPassword": "OldPass123!",
-  "newPassword": "NewPass456!"
-}
-```
-
-**Roles Required**: `STUDENT`, `TEACHER`, `ADMIN`
-
-**Response:**
-
-```json
-{
-  "code": 0,
-  "message": "Success",
-  "result": null
-}
-```
-
----
-
-#### Forgot Password
-
-```http
-POST /users/forgot-password
-Content-Type: application/json
-
-{
-  "email": "john@example.com"
-}
-```
-
-**Response:**
-
-```json
-{
-  "code": 0,
-  "message": "Success",
-  "result": null
-}
-```
-
-**Note**: This endpoint sends a password reset email to the user.
-
----
-
-### Avatar Management
-
-#### Update Avatar
-
-```http
-POST /users/update-avatar
-Authorization: Bearer {token}
-Content-Type: multipart/form-data
-
-file: [binary file data]
-```
-
-**Supported file types**: JPG, JPEG, PNG, GIF
-**Max file size**: 5MB
-
-**Response:**
-
-```json
-{
-  "code": 0,
-  "message": "Success",
-  "result": "http://localhost:8085/file/avatars/avatar-uuid.jpg"
-}
-```
-
----
-
-### User Search and Bulk Operations
-
-#### Search Users by Email
-
-```http
-GET /users?page=0&size=10&email=john&userId=
-Authorization: Bearer {token}
-```
-
-**Query Parameters**:
-
-- `page` (default: 0) - Page number
-- `size` (default: 10) - Page size
-- `email` (optional) - Email search query
-- `userId` (optional) - User ID filter
-
-**Response:**
-
-```json
-{
-  "code": 0,
-  "message": "User find by email: john",
-  "result": {
-    "currentPage": 0,
-    "totalPages": 1,
-    "pageSize": 10,
-    "totalElements": 2,
-    "data": [
-      {
-        "userId": "uuid-1",
-        "email": "john@example.com",
-        "username": "johndoe",
-        "avatarUrl": "http://localhost:8085/file/avatars/avatar-uuid.jpg"
-      },
-      {
-        "userId": "uuid-2",
-        "email": "johnny@example.com",
-        "username": "johnny",
-        "avatarUrl": null
-      }
-    ]
-  }
-}
-```
-
----
-
-#### Get Users in Bulk
-
-```http
-POST /users/bulk
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "userIds": [
-    "uuid-1",
-    "uuid-2",
-    "uuid-3"
-  ]
-}
-```
-
-**Response:**
-
-```json
-{
-  "code": 0,
-  "message": "Get user list successfully",
-  "result": [
-    {
-      "userId": "uuid-1",
-      "email": "john@example.com",
-      "username": "johndoe",
-      "avatarUrl": "http://localhost:8085/file/avatars/avatar-1.jpg"
-    },
-    {
-      "userId": "uuid-2",
-      "email": "jane@example.com",
-      "username": "janedoe",
-      "avatarUrl": "http://localhost:8085/file/avatars/avatar-2.jpg"
-    },
-    {
-      "userId": "uuid-3",
-      "email": "bob@example.com",
-      "username": "bobsmith",
-      "avatarUrl": null
-    }
-  ]
-}
-```
-
----
-
-## Error Responses
-
-### 400 Bad Request
-
-```json
-{
-  "code": 1001,
-  "message": "Invalid request parameters",
-  "result": null
-}
-```
-
-### 401 Unauthorized
-
-```json
-{
-  "code": 1002,
-  "message": "Unauthenticated",
-  "result": null
-}
-```
-
-### 403 Forbidden
-
-```json
-{
-  "code": 1003,
-  "message": "Access denied",
-  "result": null
-}
-```
-
-### 404 Not Found
-
-```json
-{
-  "code": 1004,
-  "message": "User not found",
-  "result": null
-}
-```
-
-### 409 Conflict
-
-```json
-{
-  "code": 1005,
-  "message": "Email already exists",
-  "result": null
-}
-```
-
-### 500 Internal Server Error
-
-```json
-{
-  "code": 9999,
-  "message": "Internal server error",
-  "result": null
-}
-```
-
----
-
-## Data Models
-
-### UserRequest (Registration)
-
-```typescript
-{
-  username: string;      // Required, 3-50 characters
-  email: string;         // Required, valid email format
-  password: string;      // Required, min 8 characters
-  firstName: string;     // Required
-  lastName: string;      // Required
-  gender: "MALE" | "FEMALE" | "OTHER";  // Required
-  dateOfBirth?: string;  // Optional, format: YYYY-MM-DD
-  phoneNumber?: string;  // Optional
-}
-```
-
-### UpdateProfileRequest
-
-```typescript
-{
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
-  dateOfBirth?: string;  // Format: YYYY-MM-DD
-  bio?: string;          // Max 500 characters
-  gender?: "MALE" | "FEMALE" | "OTHER";
-}
-```
-
-### UserResponse
-
-```typescript
-{
-  userId: string;
-  username: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  gender: string;
-  dateOfBirth?: string;
-  phoneNumber?: string;
-  avatarUrl?: string;
-  bio?: string;
-  createdAt: string;     // ISO 8601 format
-  updatedAt: string;     // ISO 8601 format
-}
-```
-
----
-
-## Integration with Other Services
-
-### Identity Service
-
-- Validates JWT tokens
-- Manages user credentials
-- Handles OAuth2 authentication
-
-### File Service
-
-- Stores and retrieves avatar images
-- Provides presigned URLs for avatar access
-
-### RabbitMQ Events
-
-- `user.registered` - Published when a new user registers
-- `user.updated` - Published when a user profile is updated
-- `email.sent` - Consumed for email notifications
+## Key Implementation Notes
+
+- **Keycloak integration:** `IdentityClient` (OpenFeign) — all user CRUD and token operations go through Keycloak Admin REST API
+- **Token cache:** Keycloak client-credentials token is cached in Redis to avoid repeated token requests; evicted on password change
+- **User sync:** `UserService.syncCurrentUserFromToken()` — on first request, syncs Keycloak token claims into local MySQL profile record
+- **MySQL schema:** Managed by Flyway (`src/main/resources/db/migration/`)
+- **Postman collection:** `Profile-Service-API.postman_collection.json` in service root

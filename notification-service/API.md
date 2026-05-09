@@ -1,115 +1,125 @@
 # Notification Service API
 
-## REST Endpoints
+> **Branch:** `main` | **Port:** 8091 | **Context path:** `/notification`
+> **Note:** The service directory is `notification-serice` (typo in name) but the Docker container and service are `notification-service`.
 
-Full REST API documentation is available via Swagger UI at:
+---
+
+## Base URLs
 
 ```
-http://localhost:8091/notification/swagger-ui.html
+Via API Gateway:  http://localhost:8090/notification/...
+Direct:           http://localhost:8091/notification/...
+Swagger UI:       http://localhost:8091/notification/swagger-ui.html
 ```
 
 ---
 
-## WebSocket / Real-time Notifications
+## REST Endpoints
 
-The Notification Service provides real-time delivery of notifications to connected clients via **STOMP over WebSocket** (with SockJS fallback).
+### `NotificationController` — User-facing CRUD
 
-### Connection Details
+Base: `/api/v1/notifications`
 
-| Property             | Value                                |
-| -------------------- | ------------------------------------ |
-| WebSocket URL        | `ws://<host>/notification/ws`        |
-| SockJS URL           | `http://<host>/notification/ws`      |
-| SockJS info endpoint | `http://<host>/notification/ws/info` |
-| Protocol             | STOMP 1.2 over WebSocket / SockJS    |
-| Server heartbeat     | 25 000 ms                            |
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/v1/notifications` | JWT | Send a notification (manual trigger) |
+| GET | `/api/v1/notifications` | JWT | Get notifications for current user (paginated, default page size 20) |
+| GET | `/api/v1/notifications/{id}` | JWT | Get notification by ID |
+| PATCH | `/api/v1/notifications/{id}/read` | JWT | Mark notification as read |
+| PATCH | `/api/v1/notifications/{id}/unread` | JWT | Mark notification as unread |
+| PATCH | `/api/v1/notifications/read-all` | JWT | Mark all notifications as read |
 
-### Authentication
+### `InternalNotificationController` — Service-to-service
 
-Authentication is performed at the STOMP CONNECT frame level. Include the JWT in one of the following native headers:
+Base: `/api/v1/notifications/internal`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/v1/notifications/internal` | Internal (no user JWT) | Receive a notification from another service (e.g., profile-service sending email confirmation) |
+
+This endpoint is called by profile-service when an email event should also create a notification record.
+
+### `SseNotificationController` — Real-time stream
+
+Base: `/api/v1/notifications`
+
+| Method | Path | Produces | Description |
+|---|---|---|---|
+| GET | `/api/v1/notifications/stream` | `text/event-stream` | SSE stream — subscribe to real-time notifications |
+
+The SSE connection is identified by `jwt.getSubject()` (Keycloak user ID). When a new notification is persisted for this user, it is delivered immediately over the open SSE connection via Redis Pub/Sub fan-out.
+
+---
+
+## Notification Delivery Architecture
 
 ```
-Authorization: Bearer <jwt-token>
+  [Producer]                      [notification-serice]              [Client]
+  ─────────                       ─────────────────────              ────────
+
+  profile-service  ──HTTP──►  InternalNotificationController
+                                      │
+  ai-service  ──Redis Stream──►  StreamConsumer
+                                      │
+                                SendNotificationService
+                                      │ persist to MongoDB
+                                      │ publish to Redis Pub/Sub
+                                      │
+                              SseRedisSubscriber ──SSE──►  memap-frontend
 ```
 
-or:
+---
 
-```
-token: <jwt-token>
-```
-
-> Connections without a valid JWT are rejected immediately.
-
-### STOMP Connection Flow
-
-1. **Connect** to the WebSocket endpoint with a valid JWT:
-
-```javascript
-const socket = new SockJS('http://localhost:8091/notification/ws');
-const stompClient = Stomp.over(socket);
-
-stompClient.connect(
-  { Authorization: 'Bearer <jwt-token>' },
-  (frame) => {
-    console.log('Connected:', frame);
-    // 2. Subscribe to your personal notification channel
-    stompClient.subscribe('/user/queue/notifications', (message) => {
-      const notification = JSON.parse(message.body);
-      console.log('Notification received:', notification);
-    });
-  },
-  (error) => {
-    console.error('Connection error:', error);
-  },
-);
-```
-
-2. **Subscribe** to `/user/queue/notifications` — the server automatically routes messages only to the authenticated user's session.
-
-3. **Receive** notifications as JSON payloads matching the `NotificationResponse` schema (see below).
-
-### Notification Payload Schema
+## Notification Data Model
 
 ```json
 {
   "id": "string",
   "title": "string",
   "content": "string",
-  "sender": "string",
-  "receiver": "string (userId)",
-  "channel": "SYSTEM | ROADMAP | QUIZ | PAYMENT | PROFILE",
-  "readAt": "ISO-8601 timestamp or null",
-  "createdAt": "ISO-8601 timestamp"
+  "channel": "SYSTEM | EMAIL | ...",
+  "sender": "userId",
+  "receiver": "userId",
+  "readStatus": "UNREAD | READ",
+  "createdAt": "ISO-8601 instant",
+  "updatedAt": "ISO-8601 instant"
 }
 ```
 
-### Disconnect
+---
 
-Call `stompClient.disconnect()` when the session ends. The server automatically removes the Redis Pub/Sub subscription for the user on disconnect.
+## Redis Stream Consumer (Inbound from ai-service)
+
+The service consumes from the `notification_stream` Redis Stream.
+
+Expected fields on each record:
+
+| Field | Type | Description |
+|---|---|---|
+| `template_key` | String | Notification template identifier |
+| `origin_service` | String | Which service published the event |
+| `receiver_user_id` | String | Keycloak user ID of the recipient |
+| `reference_type` | String | Type of the referenced entity |
+| `reference_id` | String | ID of the referenced entity |
+| `metadata` | JSON string | Additional key-value context |
 
 ---
 
-## Redis Stream Integration
+## Health Check
 
-Notifications are delivered to users via an internal Redis Stream → Pub/Sub pipeline:
+```
+GET http://localhost:8091/notification/actuator/health
+```
 
-1. **Producer** (another service) writes to Redis Stream `notification_stream` with fields: `type`, `userId`, `metadata` (JSON).
-2. **Consumer** (`NotificationStreamConsumer`) reads from the stream, resolves the template, persists to the database, and publishes to `user_notif:{userId}` on Redis Pub/Sub.
-3. **WebSocket publisher** (`WebSocketNotificationPublisher`) forwards the Pub/Sub message to the user's STOMP `/user/queue/notifications` destination.
+Used by Docker Compose health check with 30s interval, 40s start period.
 
-### Stream Message Format
+---
 
-| Field      | Type        | Description                                                                          |
-| ---------- | ----------- | ------------------------------------------------------------------------------------ |
-| `type`     | String      | Template key (e.g., `SYSTEM`, `ROADMAP_ASSIGNED`)                                    |
-| `userId`   | String      | Recipient's Keycloak subject ID                                                      |
-| `metadata` | JSON String | Placeholder values for template substitution (e.g., `{"roadmapTitle":"My Roadmap"}`) |
+## Architecture Notes
 
-### Retry & Dead-Letter Queue
-
-Failed or unacknowledged messages are recovered automatically:
-
-- **Recovery interval**: every 60 s
-- **Idle threshold**: 30 s (message must be pending without ACK for 30 s before recovery)
-- **Max retries**: 3 attempts
-- **Dead-letter queue**: `notification_stream_dlq` (capped at 1 000 entries, approximate) — messages exceeding max retries are moved here with `original_id` and `failure_reason` fields.
+- Clean/Hexagonal architecture — see `notification-serice/CODE_CONVENTIONS.md` for full details
+- Domain models in `domain/model/` are pure Java (no Lombok, no Spring)
+- Flyway manages MySQL schema at `src/main/resources/db/migration/`
+- All timestamps use `Instant`
+- Table names follow `tbl_` prefix convention

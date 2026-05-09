@@ -1,150 +1,88 @@
-# Storage Service API
+# Storage Service API Documentation
 
-## Base URL
+> **Branch:** `main` | **Port:** 8088 | **Context path:** `/storage`
 
-`http://localhost:8088/storage`
+---
 
-## Authentication
-
-All endpoints require a valid JWT Bearer token in the `Authorization` header:
+## Base URLs
 
 ```
-Authorization: Bearer <jwt_token>
+Via API Gateway:  http://localhost:8090/storage/...
+Direct:           http://localhost:8088/storage/...
+Swagger UI:       http://localhost:8088/storage/swagger-ui.html
+Health:           http://localhost:8088/storage/actuator/health
 ```
 
-## Swagger
+---
 
-Interactive API documentation: http://localhost:8088/storage/swagger-ui.html
+## REST Endpoints
 
-## Endpoints
+### File Management — `FileController`
 
-### Upload File
+Base: `/file`
 
-**POST** `/file/upload`
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/file/upload` | JWT | Upload a file (`multipart/form-data`) |
+| GET | `/file/{fileId}/download` | JWT | Download a file (browser download) |
+| GET | `/file/{fileId}/access` | **Public** | Access file inline (images/PDFs display in browser) |
+| GET | `/file/{fileId}` | JWT | Get file metadata |
+| GET | `/file/my-files` | JWT | List files uploaded by current user |
+| DELETE | `/file/{fileId}` | JWT | Delete a file (owner only) |
 
-Upload a file with optional custom name.
+The `/file/{fileId}/access` endpoint is intentionally **public** — used for inline viewing of images and PDFs embedded in roadmap nodes without authentication.
 
-**Request:**
+### Internal File Management — `InternalFileController`
 
-- Content-Type: `multipart/form-data`
-- Parameters:
-  - `file` (required): The file to upload
-  - `customName` (optional): Custom display name for the file
+Base: `/file/internal`
 
-**Response:** `200 OK`
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| DELETE | `/file/internal/{fileId}` | Service-internal | Delete a file without ownership check (called by other services) |
 
+### Roadmap Storage Quota — `RoadmapStorageController`
+
+Base: `/roadmap-storage`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| PUT | `/roadmap-storage/quota` | JWT / Internal | Update storage quota for a roadmap |
+
+---
+
+## Response Examples
+
+**Upload response:**
 ```json
 {
   "code": 1000,
   "result": {
-    "fileId": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "my-document.pdf",
-    "originalName": "document.pdf",
-    "contentType": "application/pdf",
-    "size": 1048576,
-    "md5Checksum": "d41d8cd98f00b204e9800998ecf8427e",
-    "downloadUrl": "http://localhost:8088/storage/file/550e8400-e29b-41d4-a716-446655440000/download",
-    "createdAt": "2026-02-06T10:30:00"
+    "fileId": "uuid",
+    "fileName": "example.png",
+    "contentType": "image/png",
+    "size": 102400,
+    "uploadedAt": "2025-01-01T00:00:00Z"
   }
 }
 ```
 
-### Download File
-
-**GET** `/file/{fileId}/download`
-
-Download a file by its ID.
-
-**Response:** Binary file with headers:
-
-- `Content-Type`: File MIME type
-- `Content-Disposition`: `attachment; filename="..."`
-- `Content-Length`: File size in bytes
-- `Content-MD5`: MD5 checksum
-
-### Get File Info
-
-**GET** `/file/{fileId}`
-
-Get file metadata by ID.
-
-**Response:** `200 OK`
-
+**File info response:**
 ```json
 {
   "code": 1000,
   "result": {
-    "fileId": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "my-document.pdf",
-    "originalName": "document.pdf",
-    "contentType": "application/pdf",
-    "size": 1048576,
-    "md5Checksum": "d41d8cd98f00b204e9800998ecf8427e",
-    "downloadUrl": "http://localhost:8088/storage/file/550e8400-e29b-41d4-a716-446655440000/download",
-    "createdAt": "2026-02-06T10:30:00"
+    "fileId": "uuid",
+    "fileName": "string",
+    "contentType": "string",
+    "size": 0,
+    "accessUrl": "http://localhost:8090/storage/file/{fileId}/access",
+    "uploadedAt": "ISO-8601"
   }
 }
 ```
 
-### List My Files
+---
 
-**GET** `/file/my-files`
+## Storage Backend
 
-Get all files owned by the authenticated user.
-
-**Response:** `200 OK`
-
-```json
-{
-  "code": 1000,
-  "result": [
-    {
-      "fileId": "550e8400-e29b-41d4-a716-446655440000",
-      "name": "document.pdf",
-      "originalName": "document.pdf",
-      "contentType": "application/pdf",
-      "size": 1048576,
-      "md5Checksum": "d41d8cd98f00b204e9800998ecf8427e",
-      "downloadUrl": "http://localhost:8088/storage/file/550e8400.../download",
-      "createdAt": "2026-02-06T10:30:00"
-    }
-  ]
-}
-```
-
-### Delete File
-
-**DELETE** `/file/{fileId}`
-
-Delete a file by ID. Only the file owner can delete.
-
-**Response:** `200 OK`
-
-```json
-{
-  "code": 1000,
-  "result": "File deleted successfully"
-}
-```
-
-## Error Responses
-
-| Code | Message                             | HTTP Status |
-| ---- | ----------------------------------- | ----------- |
-| 4200 | File not found                      | 404         |
-| 4201 | File upload failed                  | 500         |
-| 4202 | File size exceeds the maximum limit | 400         |
-| 4203 | Invalid file type                   | 400         |
-| 4204 | Storage quota exceeded              | 400         |
-| 4205 | Storage error                       | 500         |
-| 4100 | Unauthenticated                     | 401         |
-| 4103 | Access denied                       | 403         |
-
-**Error Response Format:**
-
-```json
-{
-  "code": 4200,
-  "message": "File not found"
-}
-```
+Files are stored in **MinIO** (S3-compatible object storage). Configuration via environment variables in `.env` / `docker-compose.yml`.

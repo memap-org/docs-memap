@@ -1,765 +1,233 @@
 # Roadmap Service API Documentation
 
-## Base URL
+> **Branch:** `main` | **Port:** 8083 | **Context path:** `/road-map` (via gateway rewrite from `/roadmap`)
+> All endpoints require a valid Keycloak JWT unless noted otherwise.
+
+---
+
+## Base URLs
 
 ```
-http://localhost:8083/road-map
-```
-
-## Authentication
-
-All endpoints require authentication via JWT tokens issued by Keycloak. The token must be included in the Authorization header:
-
-```
-Authorization: Bearer {token}
+Via API Gateway:  http://localhost:8090/roadmap/...
+Direct:           http://localhost:8083/road-map/...
+Swagger UI:       http://localhost:8083/swagger-ui.html
 ```
 
 ---
 
-## Endpoints
+## Roadmap Context (`com.techmap.roadmap`)
 
-### Roadmap Management
+### Roadmap CRUD — `RoadMapController`
 
-#### Create Roadmap
+Base: `api/roadmap`
 
-```http
-POST /api/roadmap
-Content-Type: application/json
-Authorization: Bearer {token}
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/roadmap` | Create a new roadmap |
+| POST | `/api/roadmap/ai-generated` | Create a roadmap from AI-generated structure |
+| GET | `/api/roadmap/{roadmapId}` | Get roadmap by ID (with nodes + edges) |
+| GET | `/api/roadmap/my-roadmap` | Get current user's roadmaps (paginated) |
+| GET | `/api/roadmap/accessible` | Get all roadmaps the user can access (paginated) |
+| DELETE | `/api/roadmap/{roadmapId}` | Delete a roadmap |
+| PATCH | `/api/roadmap/node/{roadmapId}` | Update node positions/content |
+| PATCH | `/api/roadmap/node/status/{roadmapId}` | Update node completion status |
+| PATCH | `/api/roadmap/edge/{roadmapId}` | Update edges |
 
-{
-  "title": "Java Backend Developer Roadmap",
-  "description": "Complete learning path for becoming a Java backend developer",
-  "scope": "PRIVATE",
-  "categoryId": "cat-123",
-  "nodes": [
-    {
-      "nodeId": "node-1",
-      "label": "Java Basics",
-      "type": "default",
-      "position": { "x": 100, "y": 100 },
-      "data": {
-        "description": "Learn Java fundamentals",
-        "resources": []
-      }
-    }
-  ],
-  "edges": [
-    {
-      "edgeId": "edge-1",
-      "source": "node-1",
-      "target": "node-2",
-      "type": "smoothstep"
-    }
-  ]
-}
-```
+### Roadmap Permissions — `RoadMapAccessPermissionController`
 
-**Response:**
+Base: `api/roadmap`
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/roadmap/scope/user/{roadmapId}` | Add user access (generic permission) |
+| DELETE | `/api/roadmap/scope/user/{roadmapId}` | Remove user access |
+| POST | `/api/roadmap/{roadmapId}/teachers` | Add a teacher to the roadmap |
+| POST | `/api/roadmap/{roadmapId}/students` | Add a student to the roadmap |
+| GET | `/api/roadmap/{roadmapId}/permissions` | List all users and their roles |
+| PATCH | `/api/roadmap/{roadmapId}/permissions/{userId}/role` | Change a user's role |
+| DELETE | `/api/roadmap/{roadmapId}/teachers/{userId}` | Remove a teacher |
+| DELETE | `/api/roadmap/{roadmapId}/students/{userId}` | Remove a student |
+
+> Adding a teacher/student triggers a gRPC call to profile-service to resolve the sender's display name, then sends a notification.
+
+### Roadmap Interactions — `RoadmapInteractionController`
+
+Base: `api/roadmap`
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/roadmap/{roadmapId}/comments` | Add comment on a roadmap |
+| POST | `/api/roadmap/{roadmapId}/nodes/{nodeId}/comments` | Add comment on a specific node |
+| DELETE | `/api/roadmap/comments/{commentId}` | Delete a comment |
+| GET | `/api/roadmap/comments/{commentId}` | Get a comment by ID |
+| GET | `/api/roadmap/{roadmapId}/comments` | List roadmap comments (paginated) |
+| GET | `/api/roadmap/{roadmapId}/nodes/{nodeId}/comments` | List node comments (paginated) |
+| POST | `/api/roadmap/{roadmapId}/reactions` | Toggle reaction on roadmap |
+| POST | `/api/roadmap/comments/{commentId}/reactions` | Toggle reaction on comment |
+| GET | `/api/roadmap/{roadmapId}/reactions` | List all reactions on a roadmap |
+
+> `toggleRoadmapReaction` calls profile-service via gRPC to resolve the reactor's display name.
+
+### Roadmap Notes — `RoadmapNoteController`
+
+Base: `api/roadmap`
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/roadmap/{roadmapId}/notes` | Create a personal note |
+| GET | `/api/roadmap/{roadmapId}/notes` | Get the current user's note |
+| GET | `/api/roadmap/{roadmapId}/notes/all` | Get all notes on a roadmap (paginated) |
+| PATCH | `/api/roadmap/{roadmapId}/notes/{noteId}` | Update a note |
+| DELETE | `/api/roadmap/{roadmapId}/notes/{noteId}` | Delete a note |
+
+### Focus Tracking — `RoadmapFocusTrackingController`
+
+Base: `api/roadmap`
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/roadmap/{roadmapId}/focus-tracking/sessions` | Start a focus session |
+| PATCH | `/api/roadmap/focus-tracking/sessions/{sessionId}` | Update focused minutes |
+| GET | `/api/roadmap/focus-tracking/sessions` | Get focus sessions (paginated) |
+| GET | `/api/roadmap/focus-tracking/statistics` | Get focus statistics for current user |
+
+### Progress Tracking — `RoadmapProgressTrackingController`
+
+Base: `api/roadmap-tracking-progress`
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/roadmap-tracking-progress/{roadmapId}` | Get full tracking state |
+| GET | `/api/roadmap-tracking-progress/{roadmapId}/{nodeId}` | Get status of a single node |
+| PATCH | `/api/roadmap-tracking-progress/{roadmapId}` | Update node tracking status |
+| POST | `/api/roadmap-tracking-progress/reset/{roadmapId}` | Reset all progress |
+| POST | `/api/roadmap-tracking-progress/done/{roadmapId}` | Mark all nodes as done |
+
+### Roadmap Categories — `RoadmapCategoryController`
+
+Base: `api/roadmap-category`
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/roadmap-category` | List all categories |
+| GET | `/api/roadmap-category/{roadmapCategoryId}` | Get category by ID |
+| POST | `/api/roadmap-category` | Create category |
+| PUT | `/api/roadmap-category/{roadmapCategoryId}` | Update category |
+| DELETE | `/api/roadmap-category/{roadmapCategoryId}` | Delete category |
+
+---
+
+## Learning Context (`com.techmap.learning`)
+
+### Quizzes — `QuizController`
+
+Base: `/api/v1/quizzes` (also `/learning/api/v1/quizzes`)
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/v1/quizzes` | Create a quiz (teacher) |
+| PUT | `/api/v1/quizzes/{quizId}/visibility` | Toggle quiz visibility |
+| DELETE | `/api/v1/quizzes/{quizId}` | Delete a quiz |
+| GET | `/api/v1/quizzes/{quizId}` | Get quiz details |
+| GET | `/api/v1/quizzes/{quizId}/questions` | List questions in a quiz |
+| GET | `/api/v1/quizzes/my-quizzes` | Get quizzes created by current user |
+| PUT | `/api/v1/quizzes/{quizId}` | Update a quiz |
+
+### Student Quiz — `StudentQuizController`
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/v1/quizzes/available` | Get quizzes available to the student |
+
+### Questions — `QuestionController`
+
+Base: `/api/v1/quizzes/{quizId}/questions`
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/v1/quizzes/{quizId}/questions` | Create a question |
+| GET | `/api/v1/quizzes/{quizId}/questions/{questionId}` | Get a question |
+| PUT | `/api/v1/quizzes/{quizId}/questions/{questionId}` | Update a question |
+| DELETE | `/api/v1/quizzes/{quizId}/questions/{questionId}` | Delete a question |
+| PUT | `/api/v1/quizzes/{quizId}/questions/reorder` | Reorder questions |
+
+### Quiz Attempts (Teacher view) — `QuizAttemptController`
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/v1/quizzes/{quizId}/attempts` | Start attempt (teacher/admin) |
+| PUT | `/api/v1/attempts/{attemptId}/submit` | Submit attempt |
+| GET | `/api/v1/attempts/{attemptId}` | Get attempt by ID |
+| GET | `/api/v1/quizzes/{quizId}/attempts` | List all attempts for a quiz (paginated) |
+| GET | `/api/v1/quizzes/{quizId}/statistics` | Quiz statistics |
+
+### Quiz Attempts (Student view) — `StudentQuizAttemptController`
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/v1/quizzes/{quizId}/attempts/start` | Start a new attempt |
+| GET | `/api/v1/quiz-attempts/{attemptId}/status` | Get attempt status |
+| GET | `/api/v1/quiz-attempts/active` | Get active attempt by quiz ID |
+| GET | `/api/v1/quiz-attempts/{attemptId}/active` | Get active attempt by attempt ID |
+| PUT | `/api/v1/quiz-attempts/{attemptId}/auto-save` | Auto-save answers |
+| POST | `/api/v1/quiz-attempts/{attemptId}/submit` | Submit attempt |
+| GET | `/api/v1/quizzes/{quizId}/attempts/count` | Count attempts for student |
+
+### Assignments (Teacher) — `TeacherAssignmentController`
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/roadmap/{roadmapId}/assignments` | Create assignment on a roadmap |
+| PUT | `/api/assignment/{id}` | Update assignment |
+| PATCH | `/api/assignment/{id}/file-url` | Set file URL for assignment |
+| DELETE | `/api/assignment/{id}` | Delete assignment |
+| GET | `/api/assignment/my-assignments` | List assignments created by teacher (paginated) |
+| GET | `/api/assignment/{id}/submissions` | List submissions for an assignment (paginated) |
+| PATCH | `/api/assignment/{id}/submissions/{subId}/grade` | Grade a submission |
+
+### Assignments (Student) — `StudentAssignmentController`
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/assignment/{id}/submit` | Submit an assignment |
+| GET | `/api/assignment/{id}/my-submission` | Get own submission |
+
+### Assignment Queries — `AssignmentQueryController`
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/roadmap/{roadmapId}/assignments` | List assignments for a roadmap (paginated) |
+| GET | `/api/assignment/{id}` | Get assignment by ID |
+
+---
+
+## gRPC Server (port 9083)
+
+Consumed by `roadmap-ai-service`.
+
+| RPC | Purpose |
+|---|---|
+| `RoadmapLookupService.GetRoadmapName(roadmap_id)` | Returns `{name, found}` for a given roadmap ID |
+
+---
+
+## Response Envelope
+
+All REST endpoints return:
 
 ```json
 {
   "code": 1000,
-  "message": "Success",
-  "result": {
-    "roadmapId": "roadmap-123",
-    "title": "Java Backend Developer Roadmap",
-    "createdAt": "2026-01-29T10:00:00Z"
-  }
+  "message": null,
+  "result": { ... }
 }
 ```
+
+Errors use non-1000 codes. See `docs/ERROR_CODES.md`.
 
 ---
 
-#### Get Roadmap by ID
+## Caching
 
-```http
-GET /api/roadmap/{roadmapId}
-Authorization: Bearer {token}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "result": {
-    "roadmapId": "roadmap-123",
-    "title": "Java Backend Developer Roadmap",
-    "description": "Complete learning path",
-    "scope": "PRIVATE",
-    "ownerId": "user-123",
-    "categoryId": "cat-123",
-    "imageUrl": "https://api.memap.id.vn/files/roadmap-123.jpg",
-    "nodes": [...],
-    "edges": [...],
-    "createdAt": "2026-01-29T10:00:00Z",
-    "updatedAt": "2026-01-29T10:00:00Z"
-  }
-}
-```
-
----
-
-#### Get My Roadmaps
-
-```http
-GET /api/roadmap/my-roadmap?page=1&size=10&scope=ALL&search=java
-Authorization: Bearer {token}
-```
-
-**Query Parameters:**
-
-- `page` (optional, default: 1): Page number
-- `size` (optional, default: 10): Page size
-- `scope` (optional, default: ALL): Filter by scope (PRIVATE, GROUP, PUBLIC, ALL)
-- `search` (optional): Search by title
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "result": {
-    "currentPage": 1,
-    "totalPages": 5,
-    "pageSize": 10,
-    "totalElements": 47,
-    "data": [
-      {
-        "roadmapId": "roadmap-123",
-        "title": "Java Backend Developer",
-        "description": "Complete learning path",
-        "scope": "PRIVATE",
-        "imageUrl": "https://...",
-        "createdAt": "2026-01-29T10:00:00Z"
-      }
-    ]
-  }
-}
-```
-
----
-
-#### Get Accessible Roadmaps
-
-Get all roadmaps that the user owns or has been granted access to.
-
-```http
-GET /api/roadmap/accessible?page=1&size=10&search=java
-Authorization: Bearer {token}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "result": {
-    "currentPage": 1,
-    "totalPages": 3,
-    "pageSize": 10,
-    "totalElements": 25,
-    "data": [...]
-  }
-}
-```
-
----
-
-#### Update Roadmap Information
-
-```http
-PATCH /api/roadmap/info/{roadmapId}
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "title": "Updated Title",
-  "description": "Updated description",
-  "categoryId": "cat-456"
-}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "result": true
-}
-```
-
----
-
-#### Delete Roadmap
-
-Soft delete a roadmap (only owner can delete).
-
-```http
-DELETE /api/roadmap/{roadmapId}
-Authorization: Bearer {token}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "message": "Roadmap have been deleted",
-  "result": true
-}
-```
-
----
-
-### Node Management
-
-#### Update Node
-
-```http
-PATCH /api/roadmap/node/{roadmapId}
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "nodeId": "node-1",
-  "label": "Advanced Java",
-  "type": "default",
-  "position": { "x": 200, "y": 150 },
-  "data": {
-    "description": "Learn advanced Java concepts",
-    "resources": [
-      {
-        "title": "Java Documentation",
-        "url": "https://docs.oracle.com/javase"
-      }
-    ]
-  }
-}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "message": "Node node-1 have been updated",
-  "result": true
-}
-```
-
----
-
-#### Update Node Status
-
-```http
-PATCH /api/roadmap/node/status/{roadmapId}
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "nodeId": "node-1",
-  "status": "DONE"
-}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "message": "Node node-1 have been updated",
-  "result": true
-}
-```
-
----
-
-### Edge Management
-
-#### Update Edge
-
-```http
-PATCH /api/roadmap/edge/{roadmapId}
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "edgeId": "edge-1",
-  "source": "node-1",
-  "target": "node-2",
-  "type": "smoothstep",
-  "label": "Next Step"
-}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "message": "Edge edge-1 have been updated",
-  "result": true
-}
-```
-
----
-
-### Progress Tracking
-
-#### Get Roadmap Progress
-
-Get tracking progress for the current user.
-
-```http
-GET /api/roadmap-tracking-progress/{roadmapId}
-Authorization: Bearer {token}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "result": {
-    "roadmapId": "roadmap-123",
-    "userId": "user-123",
-    "totalNodes": 10,
-    "completedNodes": 5,
-    "inProgressNodes": 2,
-    "pendingNodes": 3,
-    "progressPercentage": 50.0,
-    "nodeTracking": [
-      {
-        "nodeId": "node-1",
-        "status": "DONE",
-        "updatedAt": "2026-01-29T10:00:00Z"
-      },
-      {
-        "nodeId": "node-2",
-        "status": "IN_PROGRESS",
-        "updatedAt": "2026-01-29T11:00:00Z"
-      }
-    ]
-  }
-}
-```
-
----
-
-#### Get Node Status
-
-```http
-GET /api/roadmap-tracking-progress/{roadmapId}/{nodeId}
-Authorization: Bearer {token}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "result": {
-    "nodeId": "node-1",
-    "status": "DONE",
-    "updatedAt": "2026-01-29T10:00:00Z"
-  }
-}
-```
-
----
-
-#### Update Node Tracking
-
-```http
-PATCH /api/roadmap-tracking-progress/{roadmapId}
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "nodeId": "node-1",
-  "status": "DONE"
-}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "message": "Tracking status updated",
-  "result": true
-}
-```
-
----
-
-#### Reset Progress
-
-Set all nodes to PENDING status.
-
-```http
-POST /api/roadmap-tracking-progress/reset/{roadmapId}
-Authorization: Bearer {token}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "message": "Progress has been reset",
-  "result": true
-}
-```
-
----
-
-#### Mark All Done
-
-Set all nodes to DONE status.
-
-```http
-POST /api/roadmap-tracking-progress/done/{roadmapId}
-Authorization: Bearer {token}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "message": "All nodes marked as DONE",
-  "result": true
-}
-```
-
----
-
-### Categories
-
-#### Get All Categories
-
-```http
-GET /api/roadmap-category
-Authorization: Bearer {token}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "message": "Get all roadmap categories successfully",
-  "result": [
-    {
-      "categoryId": "cat-1",
-      "name": "Programming",
-      "description": "Programming languages and frameworks",
-      "icon": "code"
-    },
-    {
-      "categoryId": "cat-2",
-      "name": "Data Science",
-      "description": "Data analysis and machine learning",
-      "icon": "chart"
-    }
-  ]
-}
-```
-
----
-
-#### Create Category
-
-```http
-POST /api/roadmap-category
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "name": "DevOps",
-  "description": "DevOps practices and tools",
-  "icon": "server"
-}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "message": "Create roadmap category",
-  "result": true
-}
-```
-
----
-
-### Access Permissions
-
-#### Get Roadmap Permissions
-
-Get list of users who have access to the roadmap.
-
-```http
-GET /api/roadmap/{roadmapId}/permissions
-Authorization: Bearer {token}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "result": [
-    {
-      "userId": "user-123",
-      "permission": "OWNER",
-      "canEdit": true,
-      "canView": true
-    },
-    {
-      "userId": "user-456",
-      "permission": "EDITOR",
-      "canEdit": true,
-      "canView": true
-    },
-    {
-      "userId": "user-789",
-      "permission": "VIEWER",
-      "canEdit": false,
-      "canView": true
-    }
-  ]
-}
-```
-
----
-
-#### Update Roadmap Scope
-
-```http
-PATCH /api/roadmap/scope/{roadmapId}
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "scope": "GROUP"
-}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "message": "Update status of roadmap successfully",
-  "result": true
-}
-```
-
----
-
-#### Add User Permission
-
-```http
-POST /api/roadmap/scope/user/{roadmapId}
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "userId": "user-456",
-  "permission": "EDITOR",
-  "canEdit": true,
-  "canView": true
-}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "message": "Add user permission success",
-  "result": {
-    "roadmapId": "roadmap-123",
-    "userId": "user-456",
-    "permission": "EDITOR",
-    "addedAt": "2026-01-29T10:00:00Z"
-  }
-}
-```
-
----
-
-#### Remove User Permission
-
-```http
-DELETE /api/roadmap/scope/user/{roadmapId}
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "userId": "user-456"
-}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "message": "Remove user permission success",
-  "result": {
-    "roadmapId": "roadmap-123",
-    "userId": "user-456",
-    "removed": true
-  }
-}
-```
-
----
-
-### Resource Management
-
-#### Add Resource Link
-
-```http
-POST /api/roadmap/{roadmapId}/resources
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "url": "https://storage.memap.id.vn/storage/file/{fileId}/access",
-  "title": "Lecture Notes",
-  "type": "pdf"
-}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "result": {
-    "id": "uuid-string",
-    "url": "https://storage.memap.id.vn/storage/file/{fileId}/access",
-    "title": "Lecture Notes",
-    "type": "pdf",
-    "addedAt": "2026-03-23T10:00:00Z",
-    "addedBy": "user-123"
-  }
-}
-```
-
----
-
-#### Remove Resource Link
-
-```http
-DELETE /api/roadmap/{roadmapId}/resources/{resourceId}
-Authorization: Bearer {token}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "message": "Resource removed successfully"
-}
-```
-
----
-
-#### List Resource Links
-
-```http
-GET /api/roadmap/{roadmapId}/resources
-Authorization: Bearer {token}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "result": [
-    {
-      "id": "uuid-1",
-      "url": "https://storage.memap.id.vn/storage/file/abc/access",
-      "title": "Lecture Notes",
-      "type": "pdf",
-      "addedAt": "2026-03-23T10:00:00Z",
-      "addedBy": "user-123"
-    }
-  ]
-}
-```
-
----
-
-#### Update Roadmap Image
-
-```http
-PATCH /api/roadmap/image/{roadmapId}
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "imageUrl": "https://storage.memap.id.vn/storage/file/{fileId}/access"
-}
-```
-
-**Response:**
-
-```json
-{
-  "code": 1000,
-  "message": "Update roadmap image successfully",
-  "result": {
-    "imageUrl": "https://storage.memap.id.vn/storage/file/{fileId}/access"
-  }
-}
-```
-
----
-
-## Status Codes
-
-- `1000`: Success
-- `1001`: Validation error
-- `1002`: Resource not found
-- `1003`: Unauthorized
-- `1004`: Forbidden
-- `1005`: Internal server error
-
-## Error Response Format
-
-```json
-{
-  "code": 1003,
-  "message": "You don't have permission to access this roadmap"
-}
-```
-
-## Node Status Values
-
-- `PENDING`: Not started
-- `IN_PROGRESS`: Currently working on
-- `DONE`: Completed
-- `SKIPPED`: Skipped this node
-
-## Roadmap Scope Values
-
-- `PRIVATE`: Only owner can view and edit
-- `GROUP`: Owner + granted users can view/edit
-- `PUBLIC`: Anyone can view, only owner can edit
-
-## Permission Types
-
-- `OWNER`: Full control (view, edit, delete, manage permissions)
-- `EDITOR`: Can view and edit roadmap
-- `VIEWER`: Can only view roadmap
+- Roadmap queries are cached with a **Caffeine + Redis** dual-layer cache.
+- Eviction happens on write operations (create/update/delete roadmap).

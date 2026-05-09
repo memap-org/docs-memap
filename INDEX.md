@@ -10,6 +10,7 @@
 ```
 docs/
 ├── INDEX.md                     # This file
+├── AUDIT_REPORT.md              # 🆕 Cross-service bug + performance audit (2026-05-09)
 ├── API.md                       # API overview with gateway routes
 ├── ARCHITECTURE.md              # System architecture (updated)
 ├── DEPLOYMENT.md                # Deployment guides

@@ -33,6 +33,8 @@ Giao diện bảng điều khiển bao gồm:
 
 Hiển thị tất cả lộ trình mà **bạn tạo ra** hoặc **có quyền sở hữu**.
 
+Nhấn nút **"Tạo mới"** ở góc phải khu vực này để tạo lộ trình mới (chỉ hiện với tài khoản Giáo viên). Xem hướng dẫn chi tiết tại [Tạo & Chỉnh sửa lộ trình](09-tao-chinh-sua-lo-trinh.md).
+
 ### Thẻ lộ trình (Card)
 
 Mỗi lộ trình hiển thị dưới dạng thẻ với các thông tin:
@@ -47,12 +49,15 @@ Mỗi lộ trình hiển thị dưới dạng thẻ với các thông tin:
 
 Nhấn vào thẻ lộ trình để **Xem lộ trình**. Ngoài ra, bạn có thể nhấn vào menu (⋮) trên thẻ để:
 
-| Tác vụ | Mô tả |
-|--------|-------|
-| **Xem** | Mở lộ trình ở chế độ xem |
-| **Yêu thích / Bỏ yêu thích** | Đánh dấu lộ trình |
-| **Chia sẻ** | Mời người khác hoặc thay đổi quyền truy cập |
-| **Xoá** | Xoá lộ trình (chỉ chủ sở hữu, không thể hoàn tác) |
+| Tác vụ | Mô tả | Ai dùng được |
+|--------|-------|-------------|
+| **Xem** | Mở lộ trình ở chế độ xem | Tất cả |
+| **Chỉnh sửa** | Mở Editor canvas để chỉnh sửa | Chủ sở hữu / quyền EDIT |
+| **Yêu thích / Bỏ yêu thích** | Đánh dấu lộ trình | Tất cả |
+| **Chia sẻ** | Mời người khác hoặc thay đổi quyền truy cập | Chủ sở hữu |
+| **Xoá** | Xoá lộ trình (không thể hoàn tác) | Chỉ chủ sở hữu |
+
+> Xem hướng dẫn đầy đủ về chỉnh sửa tại [Tạo & Chỉnh sửa lộ trình](09-tao-chinh-sua-lo-trinh.md).
 
 ---
 

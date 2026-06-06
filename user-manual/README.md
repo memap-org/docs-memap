@@ -18,6 +18,7 @@
 | 6 | [Bài kiểm tra (Quiz)](06-quiz.md) | Làm bài kiểm tra, xem kết quả |
 | 7 | [Gói cước & Thanh toán](07-goi-cuoc.md) | Gói FREE/PRO/ENTERPRISE, nâng cấp, huỷ gói |
 | 8 | [Quản lý tài khoản](08-quan-ly-tai-khoan.md) | Hồ sơ cá nhân, đổi mật khẩu, lưu trữ |
+| 9 | [Tạo & Chỉnh sửa lộ trình](09-tao-chinh-sua-lo-trinh.md) | Editor canvas, node types, chia sẻ, AI generate, cộng tác |
 
 ---
 

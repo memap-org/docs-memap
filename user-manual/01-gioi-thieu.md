@@ -17,6 +17,9 @@
 | **Lộ trình trực quan** | Xem toàn bộ chủ đề cần học dưới dạng sơ đồ luồng, dễ nhìn thấy mối liên hệ giữa các kiến thức |
 | **Theo dõi tiến độ** | Đánh dấu từng nút học là *Đang học*, *Hoàn thành*, hoặc *Bỏ qua* |
 | **Hỏi đáp AI** | Hỏi trực tiếp về nội dung bất kỳ nút học — AI trả lời dựa trên tài liệu của lộ trình |
+| **Tạo lộ trình bằng AI** | Nhập chủ đề, AI tự động tạo toàn bộ sơ đồ lộ trình |
+| **Editor canvas** | Kéo thả node, vẽ kết nối, tùy chỉnh màu sắc và nội dung phong phú |
+| **Cộng tác thời gian thực** | Nhiều người cùng chỉnh sửa một lộ trình đồng thời, có voice chat |
 | **Bài kiểm tra (Quiz)** | Làm bài kiểm tra theo từng lộ trình để kiểm tra kiến thức |
 | **Chế độ tập trung** | Hẹn giờ Pomodoro tích hợp giúp duy trì sự tập trung |
 | **Bình luận** | Thảo luận, đặt câu hỏi trực tiếp trong lộ trình |
@@ -40,11 +43,14 @@ Vai trò mặc định khi bạn đăng ký. Người học có thể:
 
 ### Giáo viên / Người tạo (Teacher)
 Ngoài tất cả quyền của người học, giáo viên còn có thể:
-- Tạo và chỉnh sửa lộ trình
+- Tạo và chỉnh sửa lộ trình bằng editor canvas (kéo thả node, vẽ kết nối, soạn nội dung)
+- Tạo lộ trình tự động bằng AI
+- Cộng tác thời gian thực với giáo viên khác
 - Tạo bài kiểm tra và bài tập
-- Mời học sinh vào lộ trình
+- Mời học sinh / giáo viên vào lộ trình với phân quyền VIEW / EDIT
 - Xem tiến độ của học sinh
-- Dùng tính năng tạo lộ trình bằng AI
+
+> Xem chi tiết tại [Tạo & Chỉnh sửa lộ trình](09-tao-chinh-sua-lo-trinh.md).
 
 ### Quản trị viên (Admin)
 Quản lý toàn bộ người dùng và nội dung nền tảng thông qua trang quản trị riêng.

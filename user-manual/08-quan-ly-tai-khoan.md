@@ -1,6 +1,6 @@
 # 8. Quản Lý Tài Khoản
 
-[← Gói cước & Thanh toán](07-goi-cuoc.md) | [← Mục lục](README.md)
+[← Gói cước & Thanh toán](07-goi-cuoc.md) | [Tiếp theo: Tạo & Chỉnh sửa lộ trình →](09-tao-chinh-sua-lo-trinh.md)
 
 ---
 

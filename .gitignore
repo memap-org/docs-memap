@@ -1,0 +1,25 @@
+
+# AI coding assistants / agent tooling (keep private)
+.claude/
+.codex/
+.agents/
+.cursor/
+.cursorrules
+.windsurf/
+.aider*
+.continue/
+.roo/
+.codeium/
+.gemini/
+.playwright-mcp/
+.mcp.json
+.gitnexus
+openspec/
+.github/prompts/
+.github/chatmodes/
+.github/copilot-instructions.md
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+GEMINI.md
+skills-lock.json
